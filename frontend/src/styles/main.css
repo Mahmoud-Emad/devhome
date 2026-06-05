@@ -1,0 +1,8 @@
+/* devhome styles. Split for clarity:
+   - base.css   reset, tokens, wallpaper, clock, search
+   - shell.css  dock, corner controls, dialog, settings
+   - apps.css   app dialogs, shared components, per-app styles
+   Imports are concatenated in order, so the cascade is unchanged. */
+@import './base.css';
+@import './shell.css';
+@import './apps.css';

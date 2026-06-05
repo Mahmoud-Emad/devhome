@@ -1,0 +1,153 @@
+:root {
+  --text: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.62);
+  --accent: #3b82f6;
+
+  --material: rgba(28, 28, 30, 0.45);
+  --material-hover: rgba(48, 48, 52, 0.55);
+  --hairline: rgba(255, 255, 255, 0.14);
+  --hairline-strong: rgba(255, 255, 255, 0.28);
+
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+
+  /* Backdrop-filter blur radii — kept modest so the surfaces stay cheap to
+     composite over the (animating) wallpaper. */
+  --blur: 18px;
+  --blur-strong: 24px;
+
+  --shadow: 0 12px 40px rgba(0, 0, 0, 0.32);
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable",
+    "Segoe UI", system-ui, Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Honor the hidden attribute even when an element sets its own display. */
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font);
+  color: var(--text);
+  /* Always-visible base so the page is never blank if a photo is slow or blocked. */
+  background:
+    radial-gradient(120% 120% at 18% 12%, #243244 0%, #0d1726 45%, #05070d 100%);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.bg-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  /* Blur amount is set from settings; the slight over-scale below hides the
+     transparent edges the blur would otherwise expose. */
+  filter: blur(var(--bg-blur, 3px));
+  opacity: 0;
+  transform: scale(1.06);
+  /* Promote to its own compositor layer so the slow zoom is a cheap GPU
+     transform and doesn't re-rasterize the blurred image each frame. */
+  will-change: transform;
+  transition: opacity 0.9s ease, transform 14s ease-out;
+}
+
+.bg-layer.is-loaded {
+  opacity: 1;
+  transform: scale(1.03);
+}
+
+.bg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background:
+    radial-gradient(130% 90% at 50% 28%, transparent 45%, rgba(0, 0, 0, 0.5) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, transparent 32%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+.stage {
+  position: relative;
+  z-index: 2;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px 140px;
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.clock {
+  font-size: clamp(72px, 12vw, 150px);
+  font-weight: 250;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.4);
+}
+
+.subtitle {
+  margin: 0;
+  font-size: clamp(14px, 1.5vw, 18px);
+  font-weight: 400;
+  letter-spacing: 0.2px;
+  color: var(--text-secondary);
+}
+
+/* Search field — Spotlight / Windows search styling */
+.search {
+  width: min(600px, 92vw);
+  margin-top: 8px;
+}
+
+.search-form {
+  display: flex;
+  align-items: center;
+  height: 50px;
+  padding: 0 20px;
+  border-radius: var(--radius-md);
+  background: var(--material);
+  border: 1px solid var(--hairline);
+  backdrop-filter: blur(var(--blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(160%);
+  box-shadow: var(--shadow);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.search-form:focus-within {
+  background: var(--material-hover);
+  border-color: var(--accent);
+}
+
+.search-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+  font-family: inherit;
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: var(--text-secondary);
+}
+

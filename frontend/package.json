@@ -1,0 +1,41 @@
+{
+  "name": "devhome",
+  "version": "0.1.0",
+  "description": "A developer's home page — Chrome new-tab extension with daily dev tools and 4K backgrounds.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Mahmoud Emad",
+  "homepage": "https://github.com/Mahmoud-Emad/devhome#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mahmoud-Emad/devhome.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Mahmoud-Emad/devhome/issues"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "eslint": "^9.13.0",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.11.0",
+    "prettier": "^3.3.3",
+    "vite": "^5.4.0",
+    "vite-plugin-static-copy": "^1.0.6"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
+    "highlight.js": "^11.11.1",
+    "marked": "^18.0.4",
+    "marked-highlight": "^2.2.4",
+    "pdfjs-dist": "^6.0.227",
+    "tesseract.js": "^7.0.0"
+  }
+}
