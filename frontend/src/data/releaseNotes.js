@@ -6,9 +6,11 @@ export const RELEASES = [
     date: 'June 2026',
     changes: [
       'First release: clock, greeting and search on every new tab',
-      'Local 4K wallpapers with shuffle, favorite and adjustable blur',
-      'Apps launcher with Readit, plus placeholders for upcoming tools',
-      'Settings dialog: name, search engine, clock format and blur',
+      'Apps in a macOS-style dock: Voice to Text, Image to Text, Books & Notes, TodayTodo, PDF Library and Calculator',
+      'Voice and image tools run on-device with WebAssembly — your data never leaves the browser',
+      'Home dashboard of pinnable cards: trending article, tasks, continue reading, weather, focus timer and tips',
+      'Local 4K wallpapers with shuffle, favorite, custom upload and adjustable blur',
+      'Everything stored locally (IndexedDB) with Export / Import for a portable backup',
     ],
   },
 ];
