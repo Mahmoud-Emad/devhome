@@ -1086,7 +1086,15 @@
     }
 }
 
-/* Release notes */
+/* Release notes (fetched from GitHub, rendered from Markdown) */
+.release {
+    margin-bottom: 20px;
+}
+
+.release:last-child {
+    margin-bottom: 0;
+}
+
 .release-head {
     display: flex;
     align-items: baseline;
@@ -1104,7 +1112,28 @@
     color: var(--text-secondary);
 }
 
-.release-list {
+.release-installed {
+    margin-left: auto;
+    align-self: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    border-radius: 999px;
+    padding: 1px 9px;
+}
+
+.release-body {
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+.release-body p {
+    margin: 0 0 8px;
+}
+
+.release-body ul {
     margin: 0;
     padding-left: 18px;
     display: flex;
@@ -1112,9 +1141,29 @@
     gap: 7px;
 }
 
-.release-list li {
+.release-body h1,
+.release-body h2,
+.release-body h3 {
+    font-size: 14px;
+    margin: 12px 0 6px;
+    color: var(--text);
+}
+
+.release-body a {
+    color: var(--accent);
+}
+
+.release-body code {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12.5px;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 1px 5px;
+    border-radius: 4px;
+}
+
+.release-loading {
+    margin: 0;
     font-size: 13.5px;
-    line-height: 1.45;
     color: var(--text-secondary);
 }
 
