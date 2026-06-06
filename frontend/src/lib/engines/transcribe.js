@@ -26,6 +26,10 @@ async function loadPipeline(model, onProgress) {
       mjs: '/ort/ort-wasm-simd-threaded.mjs',
       wasm: '/ort/ort-wasm-simd-threaded.wasm',
     };
+    // Run single-threaded: extension pages aren't cross-origin isolated, so
+    // SharedArrayBuffer (and thus ORT threads) isn't available anyway, and this
+    // avoids spawning a pthread worker that the MV3 CSP could block.
+    env.backends.onnx.wasm.numThreads = 1;
   }
   const files = new Map(); // per-file { loaded, total }, summed for overall progress
   const progressCallback = (p) => {
