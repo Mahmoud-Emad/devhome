@@ -20,6 +20,7 @@ const DEFAULTS = {
   focus: { duration: 1500, running: false, endsAt: null, remaining: 1500 },
   pinnedBgId: null,
   lastBgId: null,
+  hiddenBgIds: [], // bundled wallpapers the user removed (restorable via Settings)
   onboarded: false, // first-run onboarding shows once, then prepares the AI models
   apps: {},
 };

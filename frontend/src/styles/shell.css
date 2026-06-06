@@ -556,6 +556,11 @@
   width: min(600px, 94vw);
 }
 
+/* Release notes dialog — a touch wider than `md` for the changelog. */
+.release-dialog {
+  width: min(620px, 94vw);
+}
+
 .settings-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -811,6 +816,22 @@
   padding: 2px;
 }
 
+.wp-empty {
+  padding: 20px 4px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.wp-restore {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wp-restore:empty {
+  display: none;
+}
+
 .wp-loading {
   grid-column: 1 / -1;
   padding: 16px 4px;
@@ -961,6 +982,20 @@
   font-size: 14px;
   line-height: 1.55;
   color: var(--text-secondary);
+}
+
+.onboarding-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 2px;
+  text-align: left;
+}
+
+.onboarding-field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .onboarding-body {

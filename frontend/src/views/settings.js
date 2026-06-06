@@ -198,7 +198,21 @@ function wallpaperPanel(_state, _onChange, ctx) {
   panel.append(upBtn, file, status);
 
   const grid = el('div', 'wp-grid');
-  panel.append(grid);
+  const restoreRow = el('div', 'wp-restore');
+  panel.append(grid, restoreRow);
+
+  // Show a restore option whenever the user has removed any default wallpaper.
+  function renderRestore() {
+    restoreRow.replaceChildren();
+    if (!(wp.hiddenCount?.() > 0)) return;
+    const btn = el('button', 'button-secondary', 'Restore default wallpapers');
+    btn.type = 'button';
+    btn.addEventListener('click', async () => {
+      await wp.restoreDefaults();
+      refresh();
+    });
+    restoreRow.append(btn, el('p', 'field-hint', 'Brings back the 5 wallpapers that ship with devhome.'));
+  }
 
   function tile(b, currentId, pinnedId) {
     const t = el('div', 'wp-tile' + (b.id === currentId ? ' is-current' : ''));
@@ -224,17 +238,15 @@ function wallpaperPanel(_state, _onChange, ctx) {
 
     t.append(thumb, star);
     if (b.author) t.append(el('span', 'wp-author', b.author));
-    if (b.custom) {
-      const del = el('button', 'wp-del', '×');
-      del.type = 'button';
-      del.title = 'Delete this wallpaper';
-      del.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        await wp.remove(b.id);
-        refresh();
-      });
-      t.append(del);
-    }
+    const del = el('button', 'wp-del', '×');
+    del.type = 'button';
+    del.title = b.custom ? 'Delete this wallpaper' : 'Remove this wallpaper';
+    del.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await wp.remove(b.id);
+      refresh();
+    });
+    t.append(del);
     return t;
   }
 
@@ -249,7 +261,10 @@ function wallpaperPanel(_state, _onChange, ctx) {
     }
     const currentId = wp.currentId();
     const pinnedId = wp.pinnedId();
-    grid.replaceChildren(...list.map((b) => tile(b, currentId, pinnedId)));
+    const tiles = list.map((b) => tile(b, currentId, pinnedId));
+    if (tiles.length) grid.replaceChildren(...tiles);
+    else grid.replaceChildren(el('p', 'wp-empty', 'No wallpapers — restore the defaults below or upload your own.'));
+    renderRestore();
   }
 
   file.addEventListener('change', async () => {

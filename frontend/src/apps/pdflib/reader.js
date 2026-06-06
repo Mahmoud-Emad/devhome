@@ -128,6 +128,13 @@ export function createReader({ container, book, onBack }) {
     saveTimer = setTimeout(() => jsonApi('PATCH', `books/${book.id}`, { lastPage: n }).catch(() => {}), 600);
   };
 
+  // Remember the zoom per book, so reopening it keeps the level you were reading at.
+  let zoomSaveTimer = null;
+  const saveZoom = (z) => {
+    clearTimeout(zoomSaveTimer);
+    zoomSaveTimer = setTimeout(() => jsonApi('PATCH', `books/${book.id}`, { zoom: z }).catch(() => {}), 600);
+  };
+
   // --- text caches (shared by search + the text layer) ---
   async function getTC(n) {
     if (!tcCache.has(n)) tcCache.set(n, await (await pdf.getPage(n)).getTextContent());
@@ -180,6 +187,7 @@ export function createReader({ container, book, onBack }) {
     if (next === scale) return;
     scale = next;
     applyZoom();
+    saveZoom(scale);
   }
   zoomOut.addEventListener('click', () => zoomBy(1 / ZOOM_STEP));
   zoomIn.addEventListener('click', () => zoomBy(ZOOM_STEP));
@@ -719,7 +727,8 @@ export function createReader({ container, book, onBack }) {
       pdf = await pdfjsLib.getDocument({ url: await fileUrl(`books/${book.id}/file`) }).promise;
       base1 = pdf ? await (await pdf.getPage(1)).getViewport({ scale: 1 }) : base1;
       base1 = { width: base1.width, height: base1.height };
-      scale = defaultScale();
+      // Restore the per-book zoom if we saved one, else fit to width.
+      scale = book.zoom ? clamp(book.zoom, ZOOM_MIN, ZOOM_MAX) : defaultScale();
       setZoomLabel();
 
       showControls();

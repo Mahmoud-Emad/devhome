@@ -30,6 +30,19 @@ export function renderOnboarding(host, { onDone } = {}) {
     ),
   );
 
+  // Ask the user's name (optional) — used for the home greeting.
+  const nameField = el('div', 'onboarding-field');
+  const nameLabel = el('label', 'onboarding-field-label', 'What should I call you?');
+  nameLabel.htmlFor = 'onboarding-name';
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.id = 'onboarding-name';
+  nameInput.className = 'input';
+  nameInput.placeholder = 'Your name (optional)';
+  nameInput.value = store.get('name') || '';
+  nameField.append(nameLabel, nameInput);
+  card.append(nameField);
+
   const body = el('div', 'onboarding-body');
   const actions = el('div', 'onboarding-actions');
   const start = el('button', 'button-primary', 'Set up & get started');
@@ -42,7 +55,8 @@ export function renderOnboarding(host, { onDone } = {}) {
   host.replaceChildren(card);
 
   function finish() {
-    store.set({ onboarded: true });
+    const name = nameInput.value.trim();
+    store.set({ onboarded: true, ...(name ? { name } : {}) });
     host.classList.add('is-leaving');
     setTimeout(() => {
       host.remove();

@@ -30,14 +30,3 @@ export const backgrounds = Object.entries(files).map(([path, url]) => ({
 }));
 
 export const byId = (id) => backgrounds.find((b) => b.id === id);
-
-export function randomBackground(excludeId = null) {
-  const pool = excludeId ? backgrounds.filter((b) => b.id !== excludeId) : backgrounds;
-  const list = pool.length ? pool : backgrounds;
-  return list[Math.floor(Math.random() * list.length)];
-}
-
-export function nextBackground(currentId) {
-  const i = backgrounds.findIndex((b) => b.id === currentId);
-  return backgrounds[(i + 1) % backgrounds.length];
-}

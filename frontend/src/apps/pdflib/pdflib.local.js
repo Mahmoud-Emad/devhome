@@ -59,6 +59,7 @@ register('PATCH', 'books/:id', async ({ params, body }) => {
   const patch = {};
   if (body.title != null && body.title.trim()) patch.title = body.title.trim();
   if (body.read != null) patch.read = body.read;
+  if (body.zoom != null) patch.zoom = body.zoom; // remembered per book
   if (body.lastPage != null) {
     patch.lastPage = Math.max(1, body.lastPage);
     patch.lastReadAt = Date.now(); // reading activity → "last read"

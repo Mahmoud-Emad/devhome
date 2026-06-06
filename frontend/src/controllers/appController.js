@@ -38,6 +38,7 @@ function setupReleaseNotes() {
   const button = $('release-btn');
   button.textContent = `v${VERSION}`;
   const dialog = createDialog({ title: 'Release notes', size: 'md', appDialog: false });
+  dialog.el.classList.add('release-dialog'); // a touch wider for the changelog
   button.addEventListener('click', () => {
     renderReleaseNotes(dialog.body);
     dialog.open();
@@ -137,6 +138,11 @@ export async function startApp() {
   if (!store.get('onboarded')) {
     const overlay = document.createElement('div');
     document.body.append(overlay);
-    renderOnboarding(overlay, { onDone: refreshHome });
+    renderOnboarding(overlay, {
+      onDone: () => {
+        renderTime(); // the greeting may now have a name
+        refreshHome();
+      },
+    });
   }
 }

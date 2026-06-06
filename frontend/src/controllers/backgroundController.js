@@ -1,5 +1,5 @@
 import { store } from '../models/store.js';
-import { backgrounds, byId, randomBackground, nextBackground } from '../models/backgrounds.js';
+import { backgrounds, byId } from '../models/backgrounds.js';
 import { renderBackgroundBar, renderCredit } from '../views/backgroundBar.js';
 import { fileUrl, getApi, callApi, jsonApi } from '../lib/api.js';
 
@@ -21,6 +21,32 @@ export function createBackgroundController({ layerEl, barEl, creditEl }) {
   let customList = []; // [{ id:'custom:xx', author, url, custom:true }]
   const listeners = new Set();
   const notify = () => listeners.forEach((fn) => fn());
+
+  // Bundled wallpapers the user has removed are hidden (the files stay in the
+  // build; "Restore" just clears this list). Rotation + the gallery skip them.
+  const hiddenIds = () => store.get('hiddenBgIds') || [];
+  const visibleBundled = () => backgrounds.filter((b) => !hiddenIds().includes(b.id));
+
+  function pickRandomBundled(excludeId) {
+    const pool = visibleBundled();
+    const choices = excludeId ? pool.filter((b) => b.id !== excludeId) : pool;
+    const arr = choices.length ? choices : pool;
+    return arr.length ? arr[Math.floor(Math.random() * arr.length)] : null;
+  }
+  function pickNextBundled(currentId) {
+    const pool = visibleBundled();
+    if (!pool.length) return null;
+    const i = pool.findIndex((b) => b.id === currentId);
+    return pool[(i + 1) % pool.length];
+  }
+
+  function clearBackground() {
+    current = null;
+    layerEl.classList.remove('is-loaded');
+    layerEl.style.backgroundImage = '';
+    renderCredit(creditEl, null);
+    paintBar();
+  }
 
   // Resolve a stored id (bundled or custom) into a wallpaper object.
   async function resolve(id) {
@@ -61,13 +87,14 @@ export function createBackgroundController({ layerEl, barEl, creditEl }) {
         await store.set({ lastBgId: candidate.id });
         return;
       } catch {
-        candidate = nextBackground(candidate.id); // always a bundled fallback
+        candidate = pickNextBundled(candidate.id); // skip to a visible bundled one
       }
     }
   }
 
   async function shuffle() {
-    await apply(nextBackground(current?.id));
+    const next = pickNextBundled(current?.id);
+    if (next) await apply(next);
     notify();
   }
 
@@ -99,7 +126,8 @@ export function createBackgroundController({ layerEl, barEl, creditEl }) {
     // A pinned id may point at a wallpaper that no longer exists — fall back to
     // a random bundled one. Custom ids need their blob/file URL resolved first.
     if (store.get('pinnedBgId')?.startsWith(CUSTOM)) await loadCustom();
-    await apply((await resolve(store.get('pinnedBgId'))) || randomBackground(store.get('lastBgId')));
+    const start = (await resolve(store.get('pinnedBgId'))) || pickRandomBundled(store.get('lastBgId'));
+    if (start) await apply(start);
   }
 
   // Wallpaper management surface used by the Settings gallery.
@@ -112,8 +140,15 @@ export function createBackgroundController({ layerEl, barEl, creditEl }) {
     pinnedId: () => store.get('pinnedBgId') || null,
     async list() {
       await loadCustom();
-      const bundled = backgrounds.map((b) => ({ id: b.id, author: b.author, url: b.url, custom: false }));
+      const bundled = visibleBundled().map((b) => ({ id: b.id, author: b.author, url: b.url, custom: false }));
       return [...customList, ...bundled];
+    },
+    // How many bundled defaults are currently hidden (Settings shows "Restore").
+    hiddenCount: () => hiddenIds().length,
+    async restoreDefaults() {
+      await store.set({ hiddenBgIds: [] });
+      if (!current) await apply(pickRandomBundled(null));
+      notify();
     },
     async setCurrent(id) {
       await apply(await resolve(id));
@@ -133,15 +168,24 @@ export function createBackgroundController({ layerEl, barEl, creditEl }) {
       return CUSTOM + w.id;
     },
     async remove(id) {
-      if (!id.startsWith(CUSTOM)) return;
-      try {
-        await jsonApi('DELETE', `wallpapers/${id.slice(CUSTOM.length)}`);
-      } catch {
-        /* ignore */
+      if (id.startsWith(CUSTOM)) {
+        try {
+          await jsonApi('DELETE', `wallpapers/${id.slice(CUSTOM.length)}`);
+        } catch {
+          /* ignore */
+        }
+        await loadCustom();
+      } else {
+        // Bundled default: hide it (restorable). The file stays in the build.
+        const h = hiddenIds();
+        if (!h.includes(id)) await store.set({ hiddenBgIds: [...h, id] });
       }
       if (store.get('pinnedBgId') === id) await store.set({ pinnedBgId: null });
-      await loadCustom();
-      if (current?.id === id) await apply(randomBackground(null));
+      if (current?.id === id) {
+        const next = pickRandomBundled(null) || customList[0] || null;
+        if (next) await apply(next);
+        else clearBackground();
+      }
       notify();
     },
   };
