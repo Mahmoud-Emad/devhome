@@ -772,11 +772,34 @@ export function createReader({ container, book, onBack }) {
     }
   })();
 
+  // Immersive reading: when the window is maximized, the toolbar floats and
+  // auto-hides to give the page the full height, sliding back in when the pointer
+  // nears the top (or a control is focused). In a windowed reader this is inert —
+  // the styling is scoped to `.dialog.is-max`.
+  const REVEAL_ZONE = 72; // px from the top that reveals the bar
+  let peekTimer = null;
+  function setPeek(on) {
+    clearTimeout(peekTimer);
+    if (on) root.classList.add('peek');
+    else peekTimer = setTimeout(() => root.classList.remove('peek'), 450);
+  }
+  function onPointerMove(e) {
+    if (!root.closest('.dialog.is-max')) return; // only in fullscreen
+    setPeek(e.clientY - root.getBoundingClientRect().top < REVEAL_ZONE);
+  }
+  const keepBar = () => setPeek(true);
+  const releaseBar = () => setPeek(false);
+  root.addEventListener('mousemove', onPointerMove);
+  bar.addEventListener('focusin', keepBar);
+  bar.addEventListener('focusout', releaseBar);
+
   return {
     el: root,
     destroy() {
       io.disconnect();
       ro.disconnect();
+      clearTimeout(peekTimer);
+      root.removeEventListener('mousemove', onPointerMove);
     },
   };
 }
