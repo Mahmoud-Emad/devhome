@@ -93,11 +93,15 @@ export function openImageCropper(file, { aspect = 16 / 9, title = 'Adjust wallpa
     img.src = url;
 
     zoom.addEventListener('input', () => setZoom(baseScale * Number(zoom.value)));
-    stage.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const r = frame();
-      setZoom(scale * (e.deltaY < 0 ? 1.08 : 0.926), e.clientX - r.left, e.clientY - r.top);
-    }, { passive: false });
+    stage.addEventListener(
+      'wheel',
+      (e) => {
+        e.preventDefault();
+        const r = frame();
+        setZoom(scale * (e.deltaY < 0 ? 1.08 : 0.926), e.clientX - r.left, e.clientY - r.top);
+      },
+      { passive: false },
+    );
 
     // Pan with pointer drag.
     stage.addEventListener('pointerdown', (e) => {
@@ -108,7 +112,11 @@ export function openImageCropper(file, { aspect = 16 / 9, title = 'Adjust wallpa
       const oy = ty;
       stage.setPointerCapture(e.pointerId);
       stage.classList.add('is-grabbing');
-      const move = (ev) => { tx = ox + (ev.clientX - startX); ty = oy + (ev.clientY - startY); render(); };
+      const move = (ev) => {
+        tx = ox + (ev.clientX - startX);
+        ty = oy + (ev.clientY - startY);
+        render();
+      };
       const up = () => {
         stage.classList.remove('is-grabbing');
         stage.releasePointerCapture(e.pointerId);
@@ -126,7 +134,9 @@ export function openImageCropper(file, { aspect = 16 / 9, title = 'Adjust wallpa
     }
 
     cancel.addEventListener('click', () => finish(null));
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) finish(null); });
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) finish(null);
+    });
     ok.addEventListener('click', () => {
       const Fw = stage.clientWidth;
       const Fh = stage.clientHeight;

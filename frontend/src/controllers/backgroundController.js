@@ -27,8 +27,12 @@ export function createBackgroundController({ layerEl, barEl, creditEl }) {
     if (!id) return null;
     if (id.startsWith(CUSTOM)) {
       return (
-        customList.find((c) => c.id === id) ||
-        { id, author: 'Custom wallpaper', url: await customUrl(id.slice(CUSTOM.length)), custom: true }
+        customList.find((c) => c.id === id) || {
+          id,
+          author: 'Custom wallpaper',
+          url: await customUrl(id.slice(CUSTOM.length)),
+          custom: true,
+        }
       );
     }
     return byId(id);
@@ -100,7 +104,10 @@ export function createBackgroundController({ layerEl, barEl, creditEl }) {
 
   // Wallpaper management surface used by the Settings gallery.
   const wallpaper = {
-    onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
+    onChange(fn) {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    },
     currentId: () => current?.id || null,
     pinnedId: () => store.get('pinnedBgId') || null,
     async list() {
@@ -127,7 +134,11 @@ export function createBackgroundController({ layerEl, barEl, creditEl }) {
     },
     async remove(id) {
       if (!id.startsWith(CUSTOM)) return;
-      try { await jsonApi('DELETE', `wallpapers/${id.slice(CUSTOM.length)}`); } catch { /* ignore */ }
+      try {
+        await jsonApi('DELETE', `wallpapers/${id.slice(CUSTOM.length)}`);
+      } catch {
+        /* ignore */
+      }
       if (store.get('pinnedBgId') === id) await store.set({ pinnedBgId: null });
       await loadCustom();
       if (current?.id === id) await apply(randomBackground(null));

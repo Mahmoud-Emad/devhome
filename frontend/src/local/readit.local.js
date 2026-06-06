@@ -27,19 +27,25 @@ async function dev() {
   const data = await getJson('https://dev.to/api/articles?top=7&per_page=40');
   return data
     .filter((a) => a.title && (a.url || a.canonical_url))
-    .map((a) => article(a.title, a.description, a.url || a.canonical_url, a.tag_list, a.reading_time_minutes, 'DEV Community'));
+    .map((a) =>
+      article(a.title, a.description, a.url || a.canonical_url, a.tag_list, a.reading_time_minutes, 'DEV Community'),
+    );
 }
 
 async function hackerNews() {
   const data = await getJson('https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=40');
   return (data.hits || [])
     .filter((h) => h.title)
-    .map((h) => article(h.title, null, h.url || `https://news.ycombinator.com/item?id=${h.objectID}`, [], null, 'Hacker News'));
+    .map((h) =>
+      article(h.title, null, h.url || `https://news.ycombinator.com/item?id=${h.objectID}`, [], null, 'Hacker News'),
+    );
 }
 
 async function lobsters() {
   const data = await getJson('https://lobste.rs/hottest.json');
-  return data.filter((s) => s.title).map((s) => article(s.title, s.description, s.url || s.comments_url, s.tags, null, 'Lobsters'));
+  return data
+    .filter((s) => s.title)
+    .map((s) => article(s.title, s.description, s.url || s.comments_url, s.tags, null, 'Lobsters'));
 }
 
 const SOURCES = [dev, hackerNews, lobsters];

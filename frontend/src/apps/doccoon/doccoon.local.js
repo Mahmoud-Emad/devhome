@@ -5,7 +5,8 @@ import { dataStore as db } from '../../lib/dataStore.js';
 const MAX_CHARS = 50000;
 const summary = ({ id, title, updated }) => ({ id, title, updated });
 const guardSize = (content) => {
-  if ((content || '').length > MAX_CHARS) throw new Error(`Note exceeds the ${MAX_CHARS.toLocaleString()} character limit.`);
+  if ((content || '').length > MAX_CHARS)
+    throw new Error(`Note exceeds the ${MAX_CHARS.toLocaleString()} character limit.`);
 };
 
 register('GET', 'notes', async () => {

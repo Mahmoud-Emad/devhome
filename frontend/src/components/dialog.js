@@ -11,8 +11,10 @@ let zTop = 100;
 const ICON = {
   min: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 12h12"></path></svg>',
   max: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4.5" y="4.5" width="15" height="15" rx="2"></rect></svg>',
-  restore: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="7" width="12" height="12" rx="2"></rect><path d="M5 15V6a1 1 0 0 1 1-1h9"></path></svg>',
-  close: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>',
+  restore:
+    '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="7" width="12" height="12" rx="2"></rect><path d="M5 15V6a1 1 0 0 1 1-1h9"></path></svg>',
+  close:
+    '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>',
 };
 
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), Math.max(lo, hi));
@@ -75,7 +77,9 @@ export function createDialog({ title = '', size = 'md', accent, onClose, onMinim
   let moved = false;
   let prev = null;
 
-  const raise = () => { el.style.zIndex = ++zTop; };
+  const raise = () => {
+    el.style.zIndex = ++zTop;
+  };
 
   function center() {
     const w = el.offsetWidth;
@@ -134,26 +138,27 @@ export function createDialog({ title = '', size = 'md', accent, onClose, onMinim
 
   // Drag by the header (not when maximized or clicking a control). Utility
   // dialogs (appDialog: false) stay centered — no drag.
-  if (appDialog) header.addEventListener('pointerdown', (e) => {
-    if (maxed || e.target.closest('.dialog-controls')) return;
-    const rect = el.getBoundingClientRect();
-    const offX = e.clientX - rect.left;
-    const offY = e.clientY - rect.top;
-    header.setPointerCapture(e.pointerId);
+  if (appDialog)
+    header.addEventListener('pointerdown', (e) => {
+      if (maxed || e.target.closest('.dialog-controls')) return;
+      const rect = el.getBoundingClientRect();
+      const offX = e.clientX - rect.left;
+      const offY = e.clientY - rect.top;
+      header.setPointerCapture(e.pointerId);
 
-    const move = (ev) => {
-      moved = true;
-      el.style.left = `${clamp(ev.clientX - offX, 0, window.innerWidth - el.offsetWidth)}px`;
-      el.style.top = `${clamp(ev.clientY - offY, 0, window.innerHeight - el.offsetHeight)}px`;
-    };
-    const up = () => {
-      header.releasePointerCapture(e.pointerId);
-      header.removeEventListener('pointermove', move);
-      header.removeEventListener('pointerup', up);
-    };
-    header.addEventListener('pointermove', move);
-    header.addEventListener('pointerup', up);
-  });
+      const move = (ev) => {
+        moved = true;
+        el.style.left = `${clamp(ev.clientX - offX, 0, window.innerWidth - el.offsetWidth)}px`;
+        el.style.top = `${clamp(ev.clientY - offY, 0, window.innerHeight - el.offsetHeight)}px`;
+      };
+      const up = () => {
+        header.releasePointerCapture(e.pointerId);
+        header.removeEventListener('pointermove', move);
+        header.removeEventListener('pointerup', up);
+      };
+      header.addEventListener('pointermove', move);
+      header.addEventListener('pointerup', up);
+    });
 
   // Resize from any edge/corner. The direction string says which sides move.
   function startResize(e) {
@@ -166,7 +171,10 @@ export function createDialog({ title = '', size = 'md', accent, onClose, onMinim
     const startY = e.clientY;
     const right0 = r.left + r.width;
     const bottom0 = r.top + r.height;
-    if (!sized) { sized = true; el.classList.add('is-sized'); }
+    if (!sized) {
+      sized = true;
+      el.classList.add('is-sized');
+    }
     handle.setPointerCapture(e.pointerId);
 
     const move = (ev) => {
@@ -178,8 +186,14 @@ export function createDialog({ title = '', size = 'md', accent, onClose, onMinim
       const dy = ev.clientY - startY;
       if (dir.includes('e')) w = clamp(r.width + dx, MIN_W, window.innerWidth - r.left - 8);
       if (dir.includes('s')) h = clamp(r.height + dy, MIN_H, window.innerHeight - r.top - 8);
-      if (dir.includes('w')) { left = clamp(r.left + dx, 8, right0 - MIN_W); w = right0 - left; }
-      if (dir.includes('n')) { top = clamp(r.top + dy, 8, bottom0 - MIN_H); h = bottom0 - top; }
+      if (dir.includes('w')) {
+        left = clamp(r.left + dx, 8, right0 - MIN_W);
+        w = right0 - left;
+      }
+      if (dir.includes('n')) {
+        top = clamp(r.top + dy, 8, bottom0 - MIN_H);
+        h = bottom0 - top;
+      }
       el.style.left = `${left}px`;
       el.style.top = `${top}px`;
       el.style.width = `${w}px`;
@@ -226,7 +240,9 @@ export function createDialog({ title = '', size = 'md', accent, onClose, onMinim
     open,
     close,
     minimize,
-    setTitle: (t) => { heading.textContent = t; },
+    setTitle: (t) => {
+      heading.textContent = t;
+    },
     isVisible: () => !el.hidden,
   };
 }

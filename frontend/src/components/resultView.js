@@ -52,7 +52,10 @@ export function createResultView({
   downloadBtn.disabled = !text;
   downloadBtn.addEventListener('click', () => download(text, downloadName));
 
-  actions.append(createCopyButton(() => area.value), downloadBtn);
+  actions.append(
+    createCopyButton(() => area.value),
+    downloadBtn,
+  );
   if (onRestart) {
     const again = document.createElement('button');
     again.className = 'button-secondary';

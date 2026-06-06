@@ -15,11 +15,16 @@ const SYMBOL = { '+': '+', '-': '−', '*': '×', '/': '÷' };
 
 function compute(a, op, b) {
   switch (op) {
-    case '+': return a + b;
-    case '-': return a - b;
-    case '*': return a * b;
-    case '/': return b === 0 ? NaN : a / b;
-    default: return b;
+    case '+':
+      return a + b;
+    case '-':
+      return a - b;
+    case '*':
+      return a * b;
+    case '/':
+      return b === 0 ? NaN : a / b;
+    default:
+      return b;
   }
 }
 
@@ -85,19 +90,28 @@ const app = {
     };
 
     const clearAll = () => {
-      acc = null; op = null; cur = '0'; fresh = true; last = null; expr = '';
+      acc = null;
+      op = null;
+      cur = '0';
+      fresh = true;
+      last = null;
+      expr = '';
     };
 
     const inputDigit = (d) => {
       if (cur === 'Error') clearAll();
-      if (fresh) { cur = d; fresh = false; }
-      else cur = cur === '0' ? d : cur + d;
+      if (fresh) {
+        cur = d;
+        fresh = false;
+      } else cur = cur === '0' ? d : cur + d;
     };
 
     const inputDot = () => {
       if (cur === 'Error') clearAll();
-      if (fresh) { cur = '0.'; fresh = false; }
-      else if (!cur.includes('.')) cur += '.';
+      if (fresh) {
+        cur = '0.';
+        fresh = false;
+      } else if (!cur.includes('.')) cur += '.';
     };
 
     const negate = () => {
@@ -140,7 +154,9 @@ const app = {
         expr = `${format(a)} ${SYMBOL[op]} ${format(b)} =`;
         cur = format(result);
         last = { op, b };
-        acc = null; op = null; fresh = true;
+        acc = null;
+        op = null;
+        fresh = true;
       } else if (last) {
         // Pressing = again repeats the last operation.
         const a = parseFloat(cur);
@@ -153,21 +169,42 @@ const app = {
 
     const handle = (item) => {
       switch (item.act) {
-        case 'digit': inputDigit(item.d); break;
-        case 'dot': inputDot(); break;
-        case 'op': chooseOp(item.op); break;
-        case 'equals': equals(); break;
-        case 'clear': clearAll(); break;
-        case 'negate': negate(); break;
-        case 'percent': percent(); break;
+        case 'digit':
+          inputDigit(item.d);
+          break;
+        case 'dot':
+          inputDot();
+          break;
+        case 'op':
+          chooseOp(item.op);
+          break;
+        case 'equals':
+          equals();
+          break;
+        case 'clear':
+          clearAll();
+          break;
+        case 'negate':
+          negate();
+          break;
+        case 'percent':
+          percent();
+          break;
       }
       draw();
     };
 
     for (const item of KEYS) {
-      const btn = el('button', `calc-key${item.kind ? ` is-${item.kind}` : ''}${item.span ? ' is-wide' : ''}`, item.label);
+      const btn = el(
+        'button',
+        `calc-key${item.kind ? ` is-${item.kind}` : ''}${item.span ? ' is-wide' : ''}`,
+        item.label,
+      );
       btn.type = 'button';
-      btn.addEventListener('click', () => { handle(item); root.focus(); });
+      btn.addEventListener('click', () => {
+        handle(item);
+        root.focus();
+      });
       pad.append(btn);
     }
 
@@ -178,9 +215,13 @@ const app = {
       if (k >= '0' && k <= '9') handle({ act: 'digit', d: k });
       else if (k === '.' || k === ',') handle({ act: 'dot' });
       else if (k === '+' || k === '-' || k === '*' || k === '/') handle({ act: 'op', op: k });
-      else if (k === 'Enter' || k === '=') { e.preventDefault(); handle({ act: 'equals' }); }
-      else if (k === 'Backspace') { backspace(); draw(); }
-      else if (k === 'Escape' || k === 'c' || k === 'C') handle({ act: 'clear' });
+      else if (k === 'Enter' || k === '=') {
+        e.preventDefault();
+        handle({ act: 'equals' });
+      } else if (k === 'Backspace') {
+        backspace();
+        draw();
+      } else if (k === 'Escape' || k === 'c' || k === 'C') handle({ act: 'clear' });
       else if (k === '%') handle({ act: 'percent' });
       else return;
       e.stopPropagation();

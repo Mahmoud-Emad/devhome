@@ -16,10 +16,13 @@ const ICON = {
   back: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>',
   prev: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>',
   next: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>',
-  zoomOut: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 12h12"></path></svg>',
-  zoomIn: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 6v12M6 12h12"></path></svg>',
+  zoomOut:
+    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 12h12"></path></svg>',
+  zoomIn:
+    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 6v12M6 12h12"></path></svg>',
   note: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>',
-  trash: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>',
+  trash:
+    '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>',
   list: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"></path><path d="M3 6h.01M3 12h.01M3 18h.01"></path></svg>',
 };
 
@@ -133,7 +136,13 @@ export function createReader({ container, book, onBack }) {
   async function getText(n) {
     if (!textCache.has(n)) {
       const tc = await getTC(n);
-      textCache.set(n, tc.items.map((it) => it.str).join(' ').toLowerCase());
+      textCache.set(
+        n,
+        tc.items
+          .map((it) => it.str)
+          .join(' ')
+          .toLowerCase(),
+      );
     }
     return textCache.get(n);
   }
@@ -153,7 +162,10 @@ export function createReader({ container, book, onBack }) {
   function applyZoom() {
     if (!popup.hidden) hidePopup();
     const anchor = current - 1;
-    pageEls.forEach((item, i) => { sizeWrap(item); unload(i); });
+    pageEls.forEach((item, i) => {
+      sizeWrap(item);
+      unload(i);
+    });
     measure();
     scrollToPage(anchor);
     // The IntersectionObserver won't re-fire for pages that were already in view
@@ -200,7 +212,10 @@ export function createReader({ container, book, onBack }) {
     let cur = 0;
     while (lo <= hi) {
       const mid = (lo + hi) >> 1;
-      if (tops[mid] <= y) { cur = mid; lo = mid + 1; } else hi = mid - 1;
+      if (tops[mid] <= y) {
+        cur = mid;
+        lo = mid + 1;
+      } else hi = mid - 1;
     }
     setCurrent(cur + 1);
   }
@@ -223,7 +238,13 @@ export function createReader({ container, book, onBack }) {
 
       const ctx = item.canvas.getContext('2d');
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      if (item.task) { try { item.task.cancel(); } catch { /* ignore */ } }
+      if (item.task) {
+        try {
+          item.task.cancel();
+        } catch {
+          /* ignore */
+        }
+      }
       item.task = page.render({ canvasContext: ctx, viewport });
       await item.task.promise;
 
@@ -257,7 +278,13 @@ export function createReader({ container, book, onBack }) {
   function unload(i) {
     const item = pageEls[i];
     if (!item || !item.rendered) return;
-    if (item.task) { try { item.task.cancel(); } catch { /* ignore */ } }
+    if (item.task) {
+      try {
+        item.task.cancel();
+      } catch {
+        /* ignore */
+      }
+    }
     item.canvas.width = 0;
     item.canvas.height = 0;
     item.canvas.classList.remove('is-ready');
@@ -313,8 +340,13 @@ export function createReader({ container, book, onBack }) {
       let inMark = false;
       for (let c = 0; c < t.length; c++) {
         const isWs = /\s/.test(t[c]);
-        if (set.has(c) && !inMark) { html += '<mark class="pdf-mark">'; inMark = true; }
-        else if (inMark && !set.has(c) && !isWs) { html += '</mark>'; inMark = false; }
+        if (set.has(c) && !inMark) {
+          html += '<mark class="pdf-mark">';
+          inMark = true;
+        } else if (inMark && !set.has(c) && !isWs) {
+          html += '</mark>';
+          inMark = false;
+        }
         html += escapeHtml(t[c]);
       }
       if (inMark) html += '</mark>';
@@ -378,7 +410,9 @@ export function createReader({ container, book, onBack }) {
     let annotations = [];
     try {
       annotations = (await getApi(`books/${book.id}/annotations`)).annotations || [];
-    } catch { return; }
+    } catch {
+      return;
+    }
     annByPage.clear();
     for (const a of annotations) {
       const i = a.page - 1;
@@ -408,7 +442,9 @@ export function createReader({ container, book, onBack }) {
     head.append(el('span', 'pdf-side-title', 'Notes'), el('span', 'pdf-side-count', String(items.length)));
     const body = el('div', 'pdf-side-list');
     if (!items.length) {
-      body.append(el('p', 'pdf-side-empty', 'No highlights yet. Select text in the book to highlight it or add a note.'));
+      body.append(
+        el('p', 'pdf-side-empty', 'No highlights yet. Select text in the book to highlight it or add a note.'),
+      );
     }
     for (const a of items) {
       const color = COLORS.includes(a.color) ? a.color : 'yellow';
@@ -421,7 +457,10 @@ export function createReader({ container, book, onBack }) {
       txt.addEventListener('click', () => jumpToAnnot(a));
       const del = el('button', 'icon-button pdf-side-del', ICON.trash);
       del.title = 'Delete';
-      del.addEventListener('click', (e) => { e.stopPropagation(); removeAnnot(a); });
+      del.addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeAnnot(a);
+      });
       row.append(txt, del);
       body.append(row);
     }
@@ -429,7 +468,11 @@ export function createReader({ container, book, onBack }) {
   }
 
   async function removeAnnot(a) {
-    try { await jsonApi('DELETE', `books/${book.id}/annotations/${a.id}`); } catch { /* ignore */ }
+    try {
+      await jsonApi('DELETE', `books/${book.id}/annotations/${a.id}`);
+    } catch {
+      /* ignore */
+    }
     const i = a.page - 1;
     const arr = annByPage.get(i) || [];
     const idx = arr.indexOf(a);
@@ -513,7 +556,10 @@ export function createReader({ container, book, onBack }) {
   popup.hidden = true;
   root.append(popup);
   let lastPointer = { x: 0, y: 0 };
-  const hidePopup = () => { popup.hidden = true; popup.replaceChildren(); };
+  const hidePopup = () => {
+    popup.hidden = true;
+    popup.replaceChildren();
+  };
 
   // Position the popup (absolute within the reader) near the cursor, clamped to
   // the reader's box so it can never spill outside the dialog.
@@ -549,9 +595,14 @@ export function createReader({ container, book, onBack }) {
     let annot;
     try {
       annot = await jsonApi('POST', `books/${book.id}/annotations`, {
-        page: snap.page, rects: snap.rects, text: snap.text, color,
+        page: snap.page,
+        rects: snap.rects,
+        text: snap.text,
+        color,
       });
-    } catch { return; }
+    } catch {
+      return;
+    }
     const i = snap.page - 1;
     if (!annByPage.has(i)) annByPage.set(i, []);
     annByPage.get(i).push(annot);
@@ -574,12 +625,18 @@ export function createReader({ container, book, onBack }) {
   function openEditPopup(annot, x, y) {
     const i = annot.page - 1;
     popup.replaceChildren();
-    popup.append(colorRow(annot.color, async (c) => {
-      annot.color = c;
-      drawPage(i);
-      renderSidebar();
-      try { await jsonApi('PATCH', `books/${book.id}/annotations/${annot.id}`, { color: c }); } catch { /* ignore */ }
-    }));
+    popup.append(
+      colorRow(annot.color, async (c) => {
+        annot.color = c;
+        drawPage(i);
+        renderSidebar();
+        try {
+          await jsonApi('PATCH', `books/${book.id}/annotations/${annot.id}`, { color: c });
+        } catch {
+          /* ignore */
+        }
+      }),
+    );
     const ta = el('textarea', 'pdf-popup-comment');
     ta.placeholder = 'Add a note…';
     ta.value = annot.comment || '';
@@ -588,7 +645,11 @@ export function createReader({ container, book, onBack }) {
     const save = el('button', 'button-primary', 'Save');
     save.addEventListener('click', async () => {
       annot.comment = ta.value.trim();
-      try { await jsonApi('PATCH', `books/${book.id}/annotations/${annot.id}`, { comment: annot.comment }); } catch { /* ignore */ }
+      try {
+        await jsonApi('PATCH', `books/${book.id}/annotations/${annot.id}`, { comment: annot.comment });
+      } catch {
+        /* ignore */
+      }
       drawPage(i);
       renderSidebar();
       hidePopup();
@@ -607,27 +668,37 @@ export function createReader({ container, book, onBack }) {
     lastPointer = { x: e.clientX, y: e.clientY };
     if (e.target.closest('.pdf-popup')) return;
     const snap = selectionSnapshot();
-    if (snap) { openSelectionPopup(snap, e.clientX, e.clientY); return; }
+    if (snap) {
+      openSelectionPopup(snap, e.clientX, e.clientY);
+      return;
+    }
     const wrap = e.target.closest('.pdf-page');
     if (wrap) {
       const i = Number(wrap.dataset.i);
       const box = wrap.getBoundingClientRect();
       const a = annotAt(i, (e.clientX - box.left) / box.width, (e.clientY - box.top) / box.height);
-      if (a) { openEditPopup(a, e.clientX, e.clientY); return; }
+      if (a) {
+        openEditPopup(a, e.clientX, e.clientY);
+        return;
+      }
     }
     hidePopup();
   });
 
   // --- scroll + resize ---
   let scrollRaf = 0;
-  view.addEventListener('scroll', () => {
-    if (scrollRaf) return;
-    scrollRaf = requestAnimationFrame(() => {
-      scrollRaf = 0;
-      updateCurrent();
-      if (!popup.hidden) hidePopup();
-    });
-  }, { passive: true });
+  view.addEventListener(
+    'scroll',
+    () => {
+      if (scrollRaf) return;
+      scrollRaf = requestAnimationFrame(() => {
+        scrollRaf = 0;
+        updateCurrent();
+        if (!popup.hidden) hidePopup();
+      });
+    },
+    { passive: true },
+  );
 
   // Zoom is manual, so resizing the window doesn't re-scale the pages — we just
   // re-measure so the page indicator and search jumps stay accurate.
@@ -646,7 +717,7 @@ export function createReader({ container, book, onBack }) {
   (async () => {
     try {
       pdf = await pdfjsLib.getDocument({ url: await fileUrl(`books/${book.id}/file`) }).promise;
-      base1 = pdf ? (await (await pdf.getPage(1)).getViewport({ scale: 1 })) : base1;
+      base1 = pdf ? await (await pdf.getPage(1)).getViewport({ scale: 1 }) : base1;
       base1 = { width: base1.width, height: base1.height };
       scale = defaultScale();
       setZoomLabel();
@@ -660,7 +731,17 @@ export function createReader({ container, book, onBack }) {
         const hl = el('div', 'pdf-hl-layer'); // highlights (% positioned, scale-free)
         const textDiv = el('div', 'pdf-text-layer');
         wrap.append(canvas, hl, textDiv);
-        const item = { wrap, canvas, hl, textDiv, base: base1, rendered: false, rendering: false, renderedScale: null, task: null };
+        const item = {
+          wrap,
+          canvas,
+          hl,
+          textDiv,
+          base: base1,
+          rendered: false,
+          rendering: false,
+          renderedScale: null,
+          task: null,
+        };
         sizeWrap(item);
         pagesEl.append(wrap);
         pageEls.push(item);

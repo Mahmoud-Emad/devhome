@@ -35,7 +35,13 @@ async function loadPipeline(model, onProgress) {
       loaded += f.loaded;
       total += f.total;
     }
-    onProgress?.({ phase: 'download', label: 'Downloading model', loaded, total, ratio: total ? loaded / total : null });
+    onProgress?.({
+      phase: 'download',
+      label: 'Downloading model',
+      loaded,
+      total,
+      ratio: total ? loaded / total : null,
+    });
   };
 
   return pipeline('automatic-speech-recognition', model, {

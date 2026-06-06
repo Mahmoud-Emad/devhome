@@ -40,7 +40,8 @@ export function createProgressBar({ hint } = {}) {
       if (downloading && p.total) {
         label.textContent = `Downloading model — ${mb(p.loaded)} / ${mb(p.total)} (${pct(p.ratio)})`;
       } else if (downloading) {
-        label.textContent = p.ratio != null ? `${p.label || 'Downloading model'} (${pct(p.ratio)})` : p.label || 'Downloading model';
+        label.textContent =
+          p.ratio != null ? `${p.label || 'Downloading model'} (${pct(p.ratio)})` : p.label || 'Downloading model';
       } else {
         label.textContent = p.ratio != null ? `${p.label || 'Working…'} (${pct(p.ratio)})` : p.label || 'Working…';
       }

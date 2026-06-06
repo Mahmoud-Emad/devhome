@@ -44,7 +44,12 @@ function toggleFullscreen() {
 export function renderBackgroundBar(el, { pinned = false, onShuffle, onTogglePin } = {}) {
   el.replaceChildren(
     iconButton(SHUFFLE, 'Shuffle wallpaper', () => onShuffle?.()),
-    iconButton(star(pinned), pinned ? 'Remove from favorites' : 'Favorite this wallpaper', () => onTogglePin?.(), pinned),
+    iconButton(
+      star(pinned),
+      pinned ? 'Remove from favorites' : 'Favorite this wallpaper',
+      () => onTogglePin?.(),
+      pinned,
+    ),
     iconButton(FULLSCREEN, 'Toggle full screen', toggleFullscreen),
   );
 }

@@ -4,23 +4,45 @@ import { register } from '../lib/localRouter.js';
 
 // WMO weather code → [label, group]; group drives the frontend icon.
 const CODES = {
-  0: ['Clear sky', 'clear'], 1: ['Mainly clear', 'clear'], 2: ['Partly cloudy', 'cloud'], 3: ['Overcast', 'cloud'],
-  45: ['Fog', 'fog'], 48: ['Rime fog', 'fog'],
-  51: ['Light drizzle', 'rain'], 53: ['Drizzle', 'rain'], 55: ['Dense drizzle', 'rain'],
-  56: ['Freezing drizzle', 'rain'], 57: ['Freezing drizzle', 'rain'],
-  61: ['Light rain', 'rain'], 63: ['Rain', 'rain'], 65: ['Heavy rain', 'rain'],
-  66: ['Freezing rain', 'rain'], 67: ['Freezing rain', 'rain'],
-  71: ['Light snow', 'snow'], 73: ['Snow', 'snow'], 75: ['Heavy snow', 'snow'], 77: ['Snow grains', 'snow'],
-  80: ['Rain showers', 'rain'], 81: ['Rain showers', 'rain'], 82: ['Violent showers', 'rain'],
-  85: ['Snow showers', 'snow'], 86: ['Snow showers', 'snow'],
-  95: ['Thunderstorm', 'storm'], 96: ['Thunderstorm', 'storm'], 99: ['Thunderstorm', 'storm'],
+  0: ['Clear sky', 'clear'],
+  1: ['Mainly clear', 'clear'],
+  2: ['Partly cloudy', 'cloud'],
+  3: ['Overcast', 'cloud'],
+  45: ['Fog', 'fog'],
+  48: ['Rime fog', 'fog'],
+  51: ['Light drizzle', 'rain'],
+  53: ['Drizzle', 'rain'],
+  55: ['Dense drizzle', 'rain'],
+  56: ['Freezing drizzle', 'rain'],
+  57: ['Freezing drizzle', 'rain'],
+  61: ['Light rain', 'rain'],
+  63: ['Rain', 'rain'],
+  65: ['Heavy rain', 'rain'],
+  66: ['Freezing rain', 'rain'],
+  67: ['Freezing rain', 'rain'],
+  71: ['Light snow', 'snow'],
+  73: ['Snow', 'snow'],
+  75: ['Heavy snow', 'snow'],
+  77: ['Snow grains', 'snow'],
+  80: ['Rain showers', 'rain'],
+  81: ['Rain showers', 'rain'],
+  82: ['Violent showers', 'rain'],
+  85: ['Snow showers', 'snow'],
+  86: ['Snow showers', 'snow'],
+  95: ['Thunderstorm', 'storm'],
+  96: ['Thunderstorm', 'storm'],
+  99: ['Thunderstorm', 'storm'],
 };
 
 const round = (n) => (n == null ? null : Math.round(n));
 const first = (arr) => (Array.isArray(arr) && arr.length ? arr[0] : null);
 
 register('GET', 'weather', async ({ query }) => {
-  const unit = String(query.unit || '').toLowerCase().startsWith('f') ? 'fahrenheit' : 'celsius';
+  const unit = String(query.unit || '')
+    .toLowerCase()
+    .startsWith('f')
+    ? 'fahrenheit'
+    : 'celsius';
   const params = new URLSearchParams({
     latitude: Number(query.lat).toFixed(3),
     longitude: Number(query.lon).toFixed(3),

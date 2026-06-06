@@ -66,16 +66,20 @@ export async function startApp() {
   // Render home widgets (today's tasks, continue-reading) and refresh badges.
   async function refreshHome() {
     const ctx = { refresh: refreshHome, openApp: (id) => apps_.openById(id) };
-    const widgets = (await Promise.all(apps.map(async (app) => {
-      if (!app.widget) return null;
-      const gate = HOME_GATES[app.id];
-      if (gate && !store.get(gate)) return null;
-      try {
-        return await app.widget(ctx);
-      } catch {
-        return null;
-      }
-    }))).filter(Boolean);
+    const widgets = (
+      await Promise.all(
+        apps.map(async (app) => {
+          if (!app.widget) return null;
+          const gate = HOME_GATES[app.id];
+          if (gate && !store.get(gate)) return null;
+          try {
+            return await app.widget(ctx);
+          } catch {
+            return null;
+          }
+        }),
+      )
+    ).filter(Boolean);
     $('home-widgets').replaceChildren(...widgets);
     apps_.refreshBadges();
   }

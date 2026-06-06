@@ -99,8 +99,10 @@ export function renderFocus(host) {
     c.style.setProperty('--accent', ACCENT);
 
     const head = el('div', 'widget-head');
-    head.append(el('span', 'widget-title', 'Focus'),
-      el('span', 'widget-count', done ? 'Done' : s.running ? 'Running' : 'Ready'));
+    head.append(
+      el('span', 'widget-title', 'Focus'),
+      el('span', 'widget-count', done ? 'Done' : s.running ? 'Running' : 'Ready'),
+    );
     c.append(head);
 
     c.append(el('div', 'focus-time' + (s.running ? ' is-running' : ''), fmt(rem)));

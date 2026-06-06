@@ -70,7 +70,9 @@ const app = {
       const heading = document.createElement('p');
       heading.className = 'progress-heading';
       heading.textContent = 'Reading the image…';
-      const bar = createProgressBar({ hint: 'The OCR model downloads once and is cached — after that it runs offline.' });
+      const bar = createProgressBar({
+        hint: 'The OCR model downloads once and is cached — after that it runs offline.',
+      });
       root.replaceChildren(createImagePanel(url), heading, bar.el);
 
       try {
@@ -88,13 +90,14 @@ const app = {
           {
             id: 'text',
             label: 'Text',
-            render: () => createResultView({
-              label: 'Extracted text',
-              text,
-              emptyText: '(no text found)',
-              downloadName: 'snaptext.txt',
-              onRestart: showPick,
-            }).el,
+            render: () =>
+              createResultView({
+                label: 'Extracted text',
+                text,
+                emptyText: '(no text found)',
+                downloadName: 'snaptext.txt',
+                onRestart: showPick,
+              }).el,
           },
           { id: 'image', label: 'Image', render: () => createImagePanel(url) },
         ],

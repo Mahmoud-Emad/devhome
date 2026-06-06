@@ -35,7 +35,10 @@ function run(store, mode, op) {
         const tx = db.transaction(store, mode);
         const req = op(tx.objectStore(store));
         let result;
-        if (req) req.onsuccess = () => { result = req.result; };
+        if (req)
+          req.onsuccess = () => {
+            result = req.result;
+          };
         tx.oncomplete = () => resolve(result);
         tx.onerror = () => reject(tx.error);
         tx.onabort = () => reject(tx.error);

@@ -72,13 +72,19 @@ const app = {
     }
     if (!book) return null;
 
-    const resume = () => { pendingBookId = book.id; ctx.openApp('pdflib'); };
+    const resume = () => {
+      pendingBookId = book.id;
+      ctx.openApp('pdflib');
+    };
 
     const card = el('div', 'widget-card');
     card.style.setProperty('--accent', '#38bdf8');
 
     const head = el('button', 'widget-head');
-    head.append(el('span', 'widget-title', 'Continue reading'), el('span', 'widget-count', `Page ${book.lastPage || 1}`));
+    head.append(
+      el('span', 'widget-title', 'Continue reading'),
+      el('span', 'widget-count', `Page ${book.lastPage || 1}`),
+    );
     head.addEventListener('click', resume);
 
     const titleBtn = el('button', 'widget-book');
@@ -124,7 +130,10 @@ const app = {
         reader = createReader({
           container: root,
           book,
-          onBack: () => { reader?.destroy?.(); load(); },
+          onBack: () => {
+            reader?.destroy?.();
+            load();
+          },
         });
       } catch (err) {
         root.replaceChildren(el('p', 'app-error', `Couldn't load the reader: ${err.message || err}`));
@@ -222,7 +231,9 @@ const app = {
       );
       const list = el('ul', 'pdf-list');
       if (!visible.length) {
-        list.append(el('li', 'pdf-empty', books.length ? 'Nothing here.' : 'No books yet. Import or upload one above.'));
+        list.append(
+          el('li', 'pdf-empty', books.length ? 'Nothing here.' : 'No books yet. Import or upload one above.'),
+        );
       } else {
         // In the All tab, mark where the read books begin (they sort last).
         const showDivider = filter === 'all' && visible.some((b) => !b.read) && visible.some((b) => b.read);

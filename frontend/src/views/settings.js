@@ -28,8 +28,8 @@ function field(label, hint, control) {
 
   const text = document.createElement('span');
   text.className = 'field-text';
-  text.innerHTML = `<span class="field-label">${label}</span>` +
-    (hint ? `<span class="field-hint">${hint}</span>` : '');
+  text.innerHTML =
+    `<span class="field-label">${label}</span>` + (hint ? `<span class="field-hint">${hint}</span>` : '');
 
   row.append(text, control);
   return row;
@@ -95,8 +95,16 @@ function slider(value, onInput) {
 function personalization(state, onChange) {
   const panel = document.createElement('div');
   panel.append(
-    field('Display name', 'Shown in the greeting', textInput(state.name, (v) => onChange({ name: v }))),
-    field('Background blur', 'Soften the wallpaper', slider(state.bgBlur, (v) => onChange({ bgBlur: v }))),
+    field(
+      'Display name',
+      'Shown in the greeting',
+      textInput(state.name, (v) => onChange({ name: v })),
+    ),
+    field(
+      'Background blur',
+      'Soften the wallpaper',
+      slider(state.bgBlur, (v) => onChange({ bgBlur: v })),
+    ),
   );
   return panel;
 }
@@ -109,16 +117,52 @@ const UNITS = [
 function preferences(state, onChange) {
   const panel = document.createElement('div');
   panel.append(
-    field('Search engine', 'Used by the search bar', select(ENGINES, state.searchEngine, (v) => onChange({ searchEngine: v }))),
-    field('24-hour clock', 'Off shows AM / PM', toggle(state.clock24h, (v) => onChange({ clock24h: v }))),
-    field('Temperature', 'Units for the weather card', select(UNITS, state.weatherUnit, (v) => onChange({ weatherUnit: v }))),
+    field(
+      'Search engine',
+      'Used by the search bar',
+      select(ENGINES, state.searchEngine, (v) => onChange({ searchEngine: v })),
+    ),
+    field(
+      '24-hour clock',
+      'Off shows AM / PM',
+      toggle(state.clock24h, (v) => onChange({ clock24h: v })),
+    ),
+    field(
+      'Temperature',
+      'Units for the weather card',
+      select(UNITS, state.weatherUnit, (v) => onChange({ weatherUnit: v })),
+    ),
     groupTitle('Home screen'),
-    field('Pin Readit', 'Show a trending article on the home', toggle(state.homeReadit, (v) => onChange({ homeReadit: v }))),
-    field("Pin today's tasks", 'Show open to-dos on the home', toggle(state.homeTasks, (v) => onChange({ homeTasks: v }))),
-    field('Pin last read book', 'Resume your latest PDF from the home', toggle(state.homeBook, (v) => onChange({ homeBook: v }))),
-    field('Pin weather', 'Show local weather on the home', toggle(state.homeWeather, (v) => onChange({ homeWeather: v }))),
-    field('Pin focus timer', 'A Pomodoro timer on the home', toggle(state.homeFocus, (v) => onChange({ homeFocus: v }))),
-    field('Show tips', 'Helpful tips on the home', toggle(state.homeTips, (v) => onChange({ homeTips: v }))),
+    field(
+      'Pin Readit',
+      'Show a trending article on the home',
+      toggle(state.homeReadit, (v) => onChange({ homeReadit: v })),
+    ),
+    field(
+      "Pin today's tasks",
+      'Show open to-dos on the home',
+      toggle(state.homeTasks, (v) => onChange({ homeTasks: v })),
+    ),
+    field(
+      'Pin last read book',
+      'Resume your latest PDF from the home',
+      toggle(state.homeBook, (v) => onChange({ homeBook: v })),
+    ),
+    field(
+      'Pin weather',
+      'Show local weather on the home',
+      toggle(state.homeWeather, (v) => onChange({ homeWeather: v })),
+    ),
+    field(
+      'Pin focus timer',
+      'A Pomodoro timer on the home',
+      toggle(state.homeFocus, (v) => onChange({ homeFocus: v })),
+    ),
+    field(
+      'Show tips',
+      'Helpful tips on the home',
+      toggle(state.homeTips, (v) => onChange({ homeTips: v })),
+    ),
   );
   return panel;
 }
@@ -163,7 +207,10 @@ function wallpaperPanel(_state, _onChange, ctx) {
     thumb.type = 'button';
     thumb.style.backgroundImage = `url("${b.url}")`;
     thumb.title = b.author ? `Use “${b.author}”` : 'Use this wallpaper';
-    thumb.addEventListener('click', async () => { await wp.setCurrent(b.id); refresh(); });
+    thumb.addEventListener('click', async () => {
+      await wp.setCurrent(b.id);
+      refresh();
+    });
 
     const star = el('button', 'wp-star' + (b.id === pinnedId ? ' is-on' : ''));
     star.type = 'button';
@@ -263,11 +310,13 @@ function appsPanel() {
     panel.append(groupTitle(appItem.name));
     const cfg = getAppConfig(appItem);
     for (const fieldDef of appItem.settings) {
-      panel.append(field(
-        fieldDef.label,
-        fieldDef.hint,
-        schemaControl(fieldDef, cfg[fieldDef.key], (v) => setAppConfig(appItem.id, fieldDef.key, v)),
-      ));
+      panel.append(
+        field(
+          fieldDef.label,
+          fieldDef.hint,
+          schemaControl(fieldDef, cfg[fieldDef.key], (v) => setAppConfig(appItem.id, fieldDef.key, v)),
+        ),
+      );
     }
   }
 

@@ -13,9 +13,10 @@ export default createMediaTextApp({
   dialog: { size: 'md' },
 
   intro: 'Upload or record a voice note and get the text back.',
-  note: 'Runs entirely in your browser — your audio never leaves your device. The '
-    + 'model downloads once (~145 MB for Tiny) and is then cached for offline use; '
-    + 'it only uses memory while transcribing. English is most accurate.',
+  note:
+    'Runs entirely in your browser — your audio never leaves your device. The ' +
+    'model downloads once (~145 MB for Tiny) and is then cached for offline use; ' +
+    'it only uses memory while transcribing. English is most accurate.',
   actionLabel: 'Extract text',
   processingHeading: 'Transcribing your voice note…',
   resultLabel: 'Transcript',

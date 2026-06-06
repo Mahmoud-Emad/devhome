@@ -43,7 +43,9 @@ function match(method, endpoint) {
     const m = route.regex.exec(path);
     if (!m) continue;
     const params = {};
-    route.keys.forEach((key, i) => { params[key] = decodeURIComponent(m[i + 1]); });
+    route.keys.forEach((key, i) => {
+      params[key] = decodeURIComponent(m[i + 1]);
+    });
     return { route, params, query };
   }
   return null;

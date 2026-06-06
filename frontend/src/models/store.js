@@ -24,8 +24,7 @@ const DEFAULTS = {
   apps: {},
 };
 
-const useChromeStorage =
-  typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local;
+const useChromeStorage = typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local;
 
 let cache = { ...DEFAULTS };
 const listeners = new Set();

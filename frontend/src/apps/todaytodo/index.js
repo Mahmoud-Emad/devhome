@@ -179,7 +179,9 @@ export default {
         // ignore; loadTodos surfaces connection errors
       }
       openByDate = {};
-      recorded.forEach((r) => { openByDate[r.date] = r.open; });
+      recorded.forEach((r) => {
+        openByDate[r.date] = r.open;
+      });
       const today = keyOf(new Date());
       dates = [...new Set([today, ...recorded.map((r) => r.date)])].sort().reverse();
       if (!dates.includes(selected)) selected = today;
@@ -298,7 +300,15 @@ function addComposer(onSubmit) {
   return taskForm({ submitLabel: 'Add task', onSubmit, compact: true });
 }
 
-function taskForm({ title = '', description = '', submitLabel, onSubmit, onCancel, compact = false, autofocus = false }) {
+function taskForm({
+  title = '',
+  description = '',
+  submitLabel,
+  onSubmit,
+  onCancel,
+  compact = false,
+  autofocus = false,
+}) {
   const card = el('div', 'todo-compose' + (compact ? ' is-compact' : ''));
 
   const titleInput = el('input', 'todo-compose-title');

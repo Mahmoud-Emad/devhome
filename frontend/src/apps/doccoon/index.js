@@ -24,7 +24,21 @@ import 'highlight.js/styles/github-dark.css';
 import { getApi, jsonApi } from '../../lib/api.js';
 
 for (const [name, lang] of Object.entries({
-  javascript, typescript, python, rust, bash, json, xml, css, go, sql, yaml, markdown: mdlang, c, cpp, java,
+  javascript,
+  typescript,
+  python,
+  rust,
+  bash,
+  json,
+  xml,
+  css,
+  go,
+  sql,
+  yaml,
+  markdown: mdlang,
+  c,
+  cpp,
+  java,
 })) {
   hljs.registerLanguage(name, lang);
 }

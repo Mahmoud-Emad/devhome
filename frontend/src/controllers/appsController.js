@@ -15,7 +15,11 @@ export function createAppsController({ dockEl, onAfterClose }) {
         title: app.name,
         size: app.dialog?.size || 'md',
         accent: app.accent,
-        onClose: () => { entry.rendered = false; dock.setOpen(app.id, false); onAfterClose?.(); },
+        onClose: () => {
+          entry.rendered = false;
+          dock.setOpen(app.id, false);
+          onAfterClose?.();
+        },
         onMinimize: () => onAfterClose?.(),
       });
       windows.set(app.id, entry);
@@ -43,14 +47,16 @@ export function createAppsController({ dockEl, onAfterClose }) {
 
   // Refresh each app's dock notification badge.
   async function refreshBadges() {
-    await Promise.all(apps.map(async (app) => {
-      if (!app.badge) return;
-      try {
-        dock.setBadge(app.id, await app.badge());
-      } catch {
-        dock.setBadge(app.id, 0);
-      }
-    }));
+    await Promise.all(
+      apps.map(async (app) => {
+        if (!app.badge) return;
+        try {
+          dock.setBadge(app.id, await app.badge());
+        } catch {
+          dock.setBadge(app.id, 0);
+        }
+      }),
+    );
   }
 
   // Deep link: open an app directly with #app=<id> in the URL.

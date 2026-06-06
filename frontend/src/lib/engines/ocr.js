@@ -40,7 +40,12 @@ export async function prefetchOcr(lang = 'eng', onProgress) {
     workerPath: '/ocr/worker.min.js',
     corePath: '/ocr',
     ...(lang === 'eng' ? { langPath: '/ocr' } : {}),
-    logger: (m) => onProgress?.({ phase: 'download', label: titleCase(m.status), ratio: typeof m.progress === 'number' ? m.progress : null }),
+    logger: (m) =>
+      onProgress?.({
+        phase: 'download',
+        label: titleCase(m.status),
+        ratio: typeof m.progress === 'number' ? m.progress : null,
+      }),
   });
   await worker.terminate();
 }
