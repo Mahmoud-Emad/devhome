@@ -27,12 +27,23 @@ export function createBackgroundController({ layerEl, barEl, creditEl }) {
   const hiddenIds = () => store.get('hiddenBgIds') || [];
   const visibleBundled = () => backgrounds.filter((b) => !hiddenIds().includes(b.id));
 
-  function pickRandomBundled(excludeId) {
-    const pool = visibleBundled();
+  // The rotation pool: the user's uploaded wallpapers plus the visible bundled
+  // ones. `customList` is kept current by loadCustom() (called in init/upload/etc).
+  const rotationPool = () => [...customList, ...visibleBundled()];
+
+  function pickRandom(excludeId) {
+    const pool = rotationPool();
     const choices = excludeId ? pool.filter((b) => b.id !== excludeId) : pool;
     const arr = choices.length ? choices : pool;
     return arr.length ? arr[Math.floor(Math.random() * arr.length)] : null;
   }
+  function pickNext(currentId) {
+    const pool = rotationPool();
+    if (!pool.length) return null;
+    const i = pool.findIndex((b) => b.id === currentId);
+    return pool[(i + 1) % pool.length];
+  }
+  // Bundled-only fallback for apply()'s error recovery (always-present images).
   function pickNextBundled(currentId) {
     const pool = visibleBundled();
     if (!pool.length) return null;
@@ -93,7 +104,7 @@ export function createBackgroundController({ layerEl, barEl, creditEl }) {
   }
 
   async function shuffle() {
-    const next = pickNextBundled(current?.id);
+    const next = pickNext(current?.id);
     if (next) await apply(next);
     notify();
   }
@@ -123,10 +134,11 @@ export function createBackgroundController({ layerEl, barEl, creditEl }) {
   }
 
   async function init() {
-    // A pinned id may point at a wallpaper that no longer exists — fall back to
-    // a random bundled one. Custom ids need their blob/file URL resolved first.
-    if (store.get('pinnedBgId')?.startsWith(CUSTOM)) await loadCustom();
-    const start = (await resolve(store.get('pinnedBgId'))) || pickRandomBundled(store.get('lastBgId'));
+    // Load custom wallpapers up front so they're part of the random rotation
+    // (and so a custom pinned/last id resolves). If nothing is pinned, pick a
+    // random one from the whole pool — uploads included.
+    await loadCustom();
+    const start = (await resolve(store.get('pinnedBgId'))) || pickRandom(store.get('lastBgId'));
     if (start) await apply(start);
   }
 
@@ -147,7 +159,10 @@ export function createBackgroundController({ layerEl, barEl, creditEl }) {
     hiddenCount: () => hiddenIds().length,
     async restoreDefaults() {
       await store.set({ hiddenBgIds: [] });
-      if (!current) await apply(pickRandomBundled(null));
+      if (!current) {
+        const next = pickRandom(null);
+        if (next) await apply(next);
+      }
       notify();
     },
     async setCurrent(id) {
@@ -182,7 +197,7 @@ export function createBackgroundController({ layerEl, barEl, creditEl }) {
       }
       if (store.get('pinnedBgId') === id) await store.set({ pinnedBgId: null });
       if (current?.id === id) {
-        const next = pickRandomBundled(null) || customList[0] || null;
+        const next = pickRandom(null);
         if (next) await apply(next);
         else clearBackground();
       }
