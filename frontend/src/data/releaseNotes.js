@@ -30,27 +30,10 @@ function head(release, installed) {
   return el;
 }
 
-// Release notes are fetched from GitHub (see local/releases.local.js) so the
-// changelog stays current without a code change. Bodies are Markdown, rendered
-// with `marked` (lazy-loaded to keep it out of the main bundle).
-export async function renderReleaseNotes(host) {
-  host.replaceChildren(note('Loading release notes…'));
+const signature = (releases) => releases.map((r) => `${r.version}@${r.date}`).join('|');
 
-  let releases;
-  try {
-    ({ releases } = await getApi('releases'));
-  } catch {
-    host.replaceChildren(note('Couldn’t load release notes — check your connection and try again.'));
-    return;
-  }
-  if (!releases?.length) {
-    host.replaceChildren(note('No releases published yet.'));
-    return;
-  }
-
-  const installed = getVersion();
-  const { marked } = await import('marked');
-
+async function draw(host, releases, installed) {
+  const { marked } = await import('marked'); // lazy: keep marked out of the main bundle
   host.replaceChildren(
     ...releases.map((release) => {
       const section = document.createElement('section');
@@ -62,4 +45,37 @@ export async function renderReleaseNotes(host) {
       return section;
     }),
   );
+}
+
+// Release notes are fetched from GitHub (see local/releases.local.js). We render
+// the cached copy instantly, then always revalidate against the network and
+// re-render if a newer release has shipped — so it never shows a stale list.
+export async function renderReleaseNotes(host) {
+  const installed = getVersion();
+  let shownSig = null;
+
+  const show = async (releases) => {
+    const sig = signature(releases);
+    if (sig === shownSig) return; // unchanged — skip the re-render (no flicker)
+    shownSig = sig;
+    await draw(host, releases, installed);
+  };
+
+  // 1. Instant: whatever we cached last time.
+  try {
+    const { releases } = await getApi('releases?cached=1');
+    if (releases?.length) await show(releases);
+  } catch {
+    /* no cache yet */
+  }
+  if (!shownSig) host.replaceChildren(note('Loading release notes…'));
+
+  // 2. Always revalidate; update the view if the list changed.
+  try {
+    const { releases } = await getApi('releases');
+    if (releases?.length) await show(releases);
+    else if (!shownSig) host.replaceChildren(note('No releases published yet.'));
+  } catch {
+    if (!shownSig) host.replaceChildren(note('Couldn’t load release notes — check your connection and try again.'));
+  }
 }

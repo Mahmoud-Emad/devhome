@@ -1,12 +1,14 @@
 // Local handler for release notes — pulled from the GitHub Releases API so the
-// changelog updates without shipping new code. Cached for 6h; on a network error
-// we fall back to the last cached copy. Sources are fetched directly (MV3
-// host_permissions bypass CORS).
+// changelog updates without shipping new code. Stale-while-revalidate:
+//   GET releases?cached=1  → whatever is cached (instant, may be empty)
+//   GET releases           → always fetches fresh, refreshes the cache, and
+//                            falls back to the cache only if the network fails.
+// So a newly published release shows up the next time the dialog is opened.
+// Sources are fetched directly (MV3 host_permissions bypass CORS).
 import { register } from '../lib/localRouter.js';
 import { dataStore as db } from '../lib/dataStore.js';
 
 const REPO = 'Mahmoud-Emad/devhome';
-const TTL = 6 * 60 * 60 * 1000;
 const CACHE = 'releases:cache';
 
 const normalize = (list) =>
@@ -20,9 +22,9 @@ const normalize = (list) =>
       url: r.html_url || '',
     }));
 
-register('GET', 'releases', async () => {
+register('GET', 'releases', async ({ query }) => {
   const cache = await db.kv.get(CACHE);
-  if (cache?.releases && Date.now() - cache.at < TTL) return { releases: cache.releases };
+  if (query?.cached) return { releases: cache?.releases || [] };
   try {
     const res = await fetch(`https://api.github.com/repos/${REPO}/releases`, {
       headers: { Accept: 'application/vnd.github+json' },
