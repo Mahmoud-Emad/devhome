@@ -150,7 +150,9 @@ export function openImageCropper(file, { aspect = 16 / 9, title = 'Adjust wallpa
       canvas.width = outW;
       canvas.height = outH;
       canvas.getContext('2d').drawImage(img, cropX, cropY, cropW, cropH, 0, 0, outW, outH);
-      canvas.toBlob((blob) => finish(blob), 'image/jpeg', 0.92);
+      // Encode as WebP — much smaller than JPEG at similar quality, so a stored
+      // custom wallpaper stays light (less IndexedDB use + object-URL memory).
+      canvas.toBlob((blob) => finish(blob), 'image/webp', 0.82);
     });
   });
 }

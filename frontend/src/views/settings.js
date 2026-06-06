@@ -270,7 +270,8 @@ function wallpaperPanel(_state, _onChange, ctx) {
     status.textContent = 'Uploading…';
     try {
       const base = (f.name || 'wallpaper').replace(/\.[^.]+$/, '');
-      const wallpaperFile = new File([blob], `${base}.jpg`, { type: 'image/jpeg' });
+      // The cropper returns WebP; keep the name/type consistent.
+      const wallpaperFile = new File([blob], `${base}.webp`, { type: 'image/webp' });
       const id = await wp.upload(wallpaperFile);
       await wp.setPinned(id); // set it as the wallpaper and keep it
       status.hidden = true;
