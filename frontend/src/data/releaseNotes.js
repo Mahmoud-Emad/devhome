@@ -1,3 +1,4 @@
+import { marked } from 'marked';
 import { getApi } from '../lib/api.js';
 
 // The version actually running (from the extension manifest), so the pill and the
@@ -32,8 +33,7 @@ function head(release, installed) {
 
 const signature = (releases) => releases.map((r) => `${r.version}@${r.date}`).join('|');
 
-async function draw(host, releases, installed) {
-  const { marked } = await import('marked'); // lazy: keep marked out of the main bundle
+function draw(host, releases, installed) {
   host.replaceChildren(
     ...releases.map((release) => {
       const section = document.createElement('section');

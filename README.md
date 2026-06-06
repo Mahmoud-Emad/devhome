@@ -64,6 +64,11 @@ Need storage? Apps call `getApi`/`jsonApi`/`callApi`/`fileUrl` (`src/lib/api.js`
 which dispatch to client-side handlers in a sibling `<id>.local.js` (built on
 `src/lib/dataStore.js`, an IndexedDB wrapper). See [`docs/architecture.md`](docs/architecture.md).
 
+## Contributing
+
+PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). `main` is protected, so
+changes go through pull requests with CI green.
+
 ## License
 
 [MIT](LICENSE) © Mahmoud Emad
