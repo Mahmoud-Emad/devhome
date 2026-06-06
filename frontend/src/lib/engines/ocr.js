@@ -10,8 +10,10 @@ export async function recognizeText(file, { lang = 'eng', onProgress } = {}) {
   const worker = await createWorker(lang, 1, {
     // Self-hosted worker + core (copied to /ocr) — MV3 forbids loading the
     // worker from a CDN. Root-relative paths resolve against the extension root.
+    // workerBlobURL:false loads the worker file directly; MV3 CSP bans blob: workers.
     workerPath: '/ocr/worker.min.js',
     corePath: '/ocr',
+    workerBlobURL: false,
     // English data is bundled (/ocr/eng.traineddata.gz) so OCR works fully
     // offline with no download. Other languages fall back to the CDN.
     ...(lang === 'eng' ? { langPath: '/ocr' } : {}),
@@ -39,6 +41,7 @@ export async function prefetchOcr(lang = 'eng', onProgress) {
   const worker = await createWorker(lang, 1, {
     workerPath: '/ocr/worker.min.js',
     corePath: '/ocr',
+    workerBlobURL: false,
     ...(lang === 'eng' ? { langPath: '/ocr' } : {}),
     logger: (m) =>
       onProgress?.({
