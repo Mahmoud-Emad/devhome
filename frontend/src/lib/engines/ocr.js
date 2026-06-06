@@ -12,7 +12,7 @@ export async function recognizeText(file, { lang = 'eng', onProgress } = {}) {
     // worker from a CDN. Root-relative paths resolve against the extension root.
     // workerBlobURL:false loads the worker file directly; MV3 CSP bans blob: workers.
     workerPath: '/ocr/worker.min.js',
-    corePath: '/ocr',
+    corePath: '/ocr/tesseract-core-simd-lstm.wasm.js',
     workerBlobURL: false,
     // English data is bundled (/ocr/eng.traineddata.gz) so OCR works fully
     // offline with no download. Other languages fall back to the CDN.
@@ -40,7 +40,7 @@ export async function prefetchOcr(lang = 'eng', onProgress) {
   const { createWorker } = await import('tesseract.js');
   const worker = await createWorker(lang, 1, {
     workerPath: '/ocr/worker.min.js',
-    corePath: '/ocr',
+    corePath: '/ocr/tesseract-core-simd-lstm.wasm.js',
     workerBlobURL: false,
     ...(lang === 'eng' ? { langPath: '/ocr' } : {}),
     logger: (m) =>

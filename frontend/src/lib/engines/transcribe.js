@@ -14,7 +14,19 @@
 // `onProgress` receives a normalized `{ phase, label, ratio, loaded, total }`.
 
 async function loadPipeline(model, onProgress) {
-  const { pipeline } = await import('@huggingface/transformers');
+  const { pipeline, env } = await import('@huggingface/transformers');
+  // Self-host the ONNX Runtime wasm. By default Transformers.js loads it from a
+  // CDN, which an MV3 extension's CSP blocks ("Failed to fetch dynamically
+  // imported module"). We pin it to our bundled copy and use the smaller plain
+  // build (the asyncify one is ~2x larger and unnecessary for CPU inference —
+  // Transformers.js itself uses the plain build on Safari). Dev (localhost, no
+  // CSP) keeps the CDN default so we don't need the files on the dev server.
+  if (import.meta.env.PROD) {
+    env.backends.onnx.wasm.wasmPaths = {
+      mjs: '/ort/ort-wasm-simd-threaded.mjs',
+      wasm: '/ort/ort-wasm-simd-threaded.wasm',
+    };
+  }
   const files = new Map(); // per-file { loaded, total }, summed for overall progress
   const progressCallback = (p) => {
     if (!p?.file) return;
