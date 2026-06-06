@@ -19,6 +19,8 @@ make lint        # ESLint
 Install the extension: `chrome://extensions` → enable **Developer mode** →
 **Load unpacked** → select `frontend/dist`.
 
+Cutting a release? See [`docs/releasing.md`](docs/releasing.md).
+
 ## Apps
 
 Each opens in a draggable/resizable window from a macOS-style dock.
