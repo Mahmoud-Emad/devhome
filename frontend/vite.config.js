@@ -23,5 +23,9 @@ export default defineConfig({
     rollupOptions: {
       input: { newtab: 'index.html' },
     },
+    // The big chunks are vendor libs that are already lazy-loaded on demand
+    // (transformers.js for televoica, pdf.js + its worker for the reader), so
+    // they never touch the initial load. Raise the advisory limit accordingly.
+    chunkSizeWarningLimit: 2000,
   },
 });
