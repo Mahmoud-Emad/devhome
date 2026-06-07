@@ -547,6 +547,7 @@ export default {
       if (!ordered.length) content.append(el('p', 'placeholder-lead', 'This collection has no pages yet.'));
 
       book.append(bar, content);
+      layout.classList.add('is-reading'); // hide the sidebar for a focused read
       main.replaceChildren(book);
       if (focusPageId) {
         const target = content.querySelector(`.doc-book-page[data-id="${focusPageId}"]`);
@@ -555,6 +556,7 @@ export default {
     }
 
     function exitBookView() {
+      layout.classList.remove('is-reading');
       if (current) main.replaceChildren(editor);
       else showPlaceholder();
     }

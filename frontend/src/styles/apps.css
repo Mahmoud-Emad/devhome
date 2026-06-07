@@ -1810,8 +1810,10 @@
   height: calc(82vh - 110px);
 }
 
-/* Sidebar hidden by the hamburger toggle. */
-.doc-layout.collapsed .doc-sidebar {
+/* Sidebar hidden by the hamburger toggle, or while reading a book. */
+.doc-layout.collapsed .doc-sidebar,
+.doc-layout.is-reading .doc-sidebar,
+.doc-layout.is-reading .doc-resizer {
   display: none;
 }
 
