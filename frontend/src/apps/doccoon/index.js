@@ -273,6 +273,37 @@ export default {
       });
     }
 
+    // Confirm dialog (same look as the rename dialog); resolves true / false.
+    function confirmDelete(message) {
+      return new Promise((resolve) => {
+        const overlay = el('div', 'doc-prompt-overlay');
+        const card = el('div', 'doc-prompt');
+        const actions = el('div', 'doc-prompt-actions');
+        const cancel = el('button', 'button-secondary', 'Cancel');
+        const ok = el('button', 'button-primary doc-danger', 'Delete');
+        actions.append(cancel, ok);
+        card.append(el('p', 'doc-prompt-label', message), actions);
+        overlay.append(card);
+        layout.append(overlay);
+
+        const onKey = (e) => {
+          if (e.key === 'Escape') close(false);
+        };
+        const close = (val) => {
+          document.removeEventListener('keydown', onKey);
+          overlay.remove();
+          resolve(val);
+        };
+        document.addEventListener('keydown', onKey);
+        cancel.addEventListener('click', () => close(false));
+        ok.addEventListener('click', () => close(true));
+        overlay.addEventListener('click', (e) => {
+          if (e.target === overlay) close(false);
+        });
+        requestAnimationFrame(() => ok.focus()); // Enter confirms
+      });
+    }
+
     // --- editor (built once, kept stable so the textarea doesn't lose focus) ---
     const editor = el('div', 'doc-editor');
     editor.dataset.view = view;
@@ -454,6 +485,7 @@ export default {
 
     del.addEventListener('click', async () => {
       if (!current) return;
+      if (!(await confirmDelete('Delete this page?'))) return;
       const colId = current.collectionId;
       const snapshot = { title: current.title, content: source.value };
       await jsonApi('DELETE', `pages/${current.id}`);
@@ -709,6 +741,7 @@ export default {
 
     async function deleteCollection(id) {
       const col = collections.find((c) => c.id === id);
+      if (!(await confirmDelete(`Delete "${col?.name || 'this collection'}" and all its pages?`))) return;
       await flushSave();
       if (!pagesByCol.has(id)) await loadPages(id);
       // Capture full pages (with content) so the delete can be undone.

@@ -2185,6 +2185,10 @@
   gap: 8px;
 }
 
+.button-primary.doc-danger {
+  background: #e5484d;
+}
+
 .doc-main {
   flex: 1;
   min-width: 0;
