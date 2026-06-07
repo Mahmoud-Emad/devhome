@@ -108,12 +108,21 @@ export function renderOnboarding(host, { onDone } = {}) {
     }, 220);
   }
 
+  // Lock the form while setup runs so nothing changes mid-download.
+  function lockForm() {
+    nameInput.disabled = true;
+    checks.forEach((cb) => (cb.disabled = true));
+    nameField.classList.add('is-locked');
+    tools.classList.add('is-locked');
+  }
+
   async function prepare() {
     const selected = OPTIONAL.filter((t) => checks.get(t.id).checked);
     if (!selected.length) {
       finish(); // just the essentials — nothing to download
       return;
     }
+    lockForm();
     const bar = createProgressBar({ hint: 'One-time setup — cached and works offline afterwards.' });
     body.replaceChildren(bar.el);
     try {

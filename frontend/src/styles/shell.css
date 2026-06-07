@@ -1115,6 +1115,13 @@
   text-align: left;
 }
 
+/* While setup is running the form is locked. */
+.onboarding-field.is-locked,
+.onboarding-tools.is-locked {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 .onboarding-tool {
   display: flex;
   align-items: center;
