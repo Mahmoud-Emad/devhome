@@ -23,6 +23,13 @@ export const currentOp = (appId) => ops.get(appId) || null; // { kind, ratio } o
 export const isBusy = (appId) => ops.has(appId);
 export const opError = (appId) => errors.get(appId) || null;
 
+// Clear any lingering error messages (e.g. when the App Store is reopened).
+export function clearInstallErrors() {
+  if (!errors.size) return;
+  errors.clear();
+  notifyProgress();
+}
+
 function run(appId, kind, work) {
   if (ops.has(appId)) return; // already in flight
   errors.delete(appId);

@@ -103,8 +103,15 @@ const app = {
 
     let books = [];
     let filter = 'all';
+    let activeReader = null; // current open reader, so we can destroy it on close
+
+    const closeReader = () => {
+      activeReader?.destroy?.();
+      activeReader = null;
+    };
 
     const load = async () => {
+      closeReader();
       try {
         books = (await getApi('books')).books || [];
       } catch (err) {
@@ -124,17 +131,14 @@ const app = {
     };
 
     const openReader = async (book) => {
+      closeReader();
       root.replaceChildren(el('p', 'pdf-loading', 'Loading reader…'));
       try {
         const { createReader } = await import('./reader.js');
-        let reader;
-        reader = createReader({
+        activeReader = createReader({
           container: root,
           book,
-          onBack: () => {
-            reader?.destroy?.();
-            load();
-          },
+          onBack: () => load(),
         });
       } catch (err) {
         root.replaceChildren(el('p', 'app-error', `Couldn't load the reader: ${err.message || err}`));
@@ -293,6 +297,9 @@ const app = {
     }
 
     load();
+
+    // Destroy the reader (its observers/render tasks) when the window closes.
+    return closeReader;
   },
 };
 

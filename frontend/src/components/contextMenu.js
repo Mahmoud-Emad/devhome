@@ -56,6 +56,7 @@ export function openContextMenu(x, y, items) {
     menu.remove();
     document.removeEventListener('mousedown', onDown, true);
     document.removeEventListener('keydown', onKey, true);
+    document.removeEventListener('scroll', dismiss, true);
     window.removeEventListener('blur', dismiss);
     window.removeEventListener('resize', dismiss);
     if (close === dismiss) close = null;
@@ -66,6 +67,7 @@ export function openContextMenu(x, y, items) {
   setTimeout(() => {
     document.addEventListener('mousedown', onDown, true);
     document.addEventListener('keydown', onKey, true);
+    document.addEventListener('scroll', dismiss, true); // capture: any scroll closes it
     window.addEventListener('blur', dismiss);
     window.addEventListener('resize', dismiss);
   }, 0);

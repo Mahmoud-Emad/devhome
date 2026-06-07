@@ -204,6 +204,11 @@ export default {
     let userView = 'split'; // the view to restore when there's room again
     let narrow = false;
     let saveTimer = null;
+    // Book ("Export as Book") reading view: a back-stack of { colId, scrollTop }
+    // so following a cross-collection link can be reversed.
+    let bookStack = [];
+    let currentBookColId = null;
+    let bookContent = null;
 
     const layout = el('div', 'doc-layout');
     const sidebar = el('aside', 'doc-sidebar');
@@ -457,6 +462,8 @@ export default {
     async function openInternalLinkInBook(internal, baseColId) {
       const found = await resolveInternalLink(internal, baseColId);
       if (!found) return;
+      // Remember where we were so Back can return to it.
+      bookStack.push({ colId: currentBookColId, scrollTop: bookContent?.scrollTop || 0 });
       await openBookView(found.col.id, found.page.id);
     }
 
@@ -506,9 +513,16 @@ export default {
       });
     }
 
+    // Enter book view fresh (from the collection menu) — resets the back-stack.
+    function enterBookView(colId) {
+      bookStack = [];
+      return openBookView(colId);
+    }
+
     // "Export as Book": read the whole collection as one continuous, rendered doc.
-    async function openBookView(colId, focusPageId) {
+    async function openBookView(colId, focusPageId, scrollTop) {
       await flushSave();
+      currentBookColId = colId;
       const col = collections.find((c) => c.id === colId);
       if (!pagesByCol.has(colId)) await loadPages(colId);
       const list = pagesByCol.get(colId) || [];
@@ -519,12 +533,20 @@ export default {
       const bar = el('div', 'doc-book-bar');
       const back = el('button', 'icon-button');
       back.innerHTML = BACK;
-      back.title = 'Back to editor';
-      back.setAttribute('aria-label', 'Back to editor');
-      back.addEventListener('click', exitBookView);
+      back.title = bookStack.length ? 'Back' : 'Back to editor';
+      back.setAttribute('aria-label', back.title);
+      back.addEventListener('click', () => {
+        if (bookStack.length) {
+          const prev = bookStack.pop();
+          openBookView(prev.colId, null, prev.scrollTop);
+        } else {
+          exitBookView();
+        }
+      });
       bar.append(back, el('span', 'doc-book-title', col?.name || 'Book'));
 
       const content = el('div', 'doc-book-content md-preview');
+      bookContent = content;
       for (const page of ordered) {
         const section = el('section', 'doc-book-page');
         section.dataset.id = page.id;
@@ -541,10 +563,17 @@ export default {
       if (focusPageId) {
         const target = content.querySelector(`.doc-book-page[data-id="${focusPageId}"]`);
         if (target) requestAnimationFrame(() => target.scrollIntoView({ block: 'start' }));
+      } else if (scrollTop != null) {
+        requestAnimationFrame(() => {
+          content.scrollTop = scrollTop;
+        });
       }
     }
 
     function exitBookView() {
+      bookStack = [];
+      currentBookColId = null;
+      bookContent = null;
       layout.classList.remove('is-reading');
       if (current) main.replaceChildren(editor);
       else showPlaceholder();
@@ -710,7 +739,7 @@ export default {
       row.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         openContextMenu(e.clientX, e.clientY, [
-          { label: 'Export as Book', icon: BOOK, onClick: () => openBookView(col.id) },
+          { label: 'Export as Book', icon: BOOK, onClick: () => enterBookView(col.id) },
           { label: 'Rename', icon: PENCIL, onClick: () => renameCollection(col) },
           { label: 'Download (.zip)', icon: DOWNLOAD, onClick: () => downloadCollection(col.id) },
           { separator: true },
