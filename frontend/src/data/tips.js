@@ -5,6 +5,7 @@ export const tips = [
   'Favorite a wallpaper (★) in Settings so it won’t rotate.',
   'Upload a custom wallpaper, then crop and frame it to fit.',
   'Highlight PDF text, add notes, and browse them in Notes.',
+  'Maximize a PDF book to read fullscreen — the toolbar auto-hides.',
   'App windows can be dragged, resized, maximized, or minimized.',
   'Continue reading reopens your latest PDF where you left off.',
   'Click the shuffle icon (bottom-right) for a fresh wallpaper.',
