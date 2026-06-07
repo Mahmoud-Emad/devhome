@@ -1,6 +1,6 @@
 {
   "name": "devhome",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "A developer's home page — Chrome new-tab extension with daily dev tools and 4K backgrounds.",
   "type": "module",
   "license": "MIT",
