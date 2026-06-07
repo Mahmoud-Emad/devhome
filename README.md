@@ -30,7 +30,7 @@ Each opens in a draggable/resizable window from a macOS-style dock.
 | **Voice to Text** | Transcribe a recorded/uploaded voice note | Whisper in-browser (WASM) |
 | **Image to Text** | OCR an image | Tesseract.js (WASM) |
 | **Denoise** | Remove background noise from audio | DeepFilterNet3 (ONNX/WASM) |
-| **Books & Notes** | Notion-style Markdown notes, live preview | — |
+| **Books & Notes** | Markdown notes in collections (a notebook per book), live preview | — |
 | **TodayTodo** | A fresh to-do list per day | — |
 | **PDF Library** | Read/annotate PDFs: search, zoom, highlights, comments | PDF.js |
 | **Calculator** | Four-function calculator, keyboard-driven | — |

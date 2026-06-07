@@ -1861,16 +1861,114 @@
   height: 28px;
 }
 
-.doc-note-list {
+.doc-collection-list {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   overflow-y: auto;
 }
 
-.doc-note-item {
+.doc-collection {
+  display: flex;
+  flex-direction: column;
+}
+
+.doc-collection-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.doc-collection-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  text-align: left;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.doc-collection-open:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.doc-collection-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  color: var(--accent);
+}
+
+.doc-collection-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.doc-collection-count {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Active collection row: inline-editable name + delete, with its pages below. */
+.doc-collection.is-active > .doc-collection-row {
+  gap: 6px;
+  padding: 7px 8px 7px 12px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.doc-collection-rename {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.doc-collection-del {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  color: var(--text-secondary);
+}
+
+.doc-collection-del:hover {
+  color: #ff8f8f;
+}
+
+.doc-page-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 2px 0 6px;
+  padding-left: 10px;
+}
+
+.doc-page-item {
   display: flex;
   align-items: center;
   gap: 2px;
@@ -1881,48 +1979,68 @@
     color 0.15s ease;
 }
 
-.doc-note-item:hover {
+.doc-page-item:hover {
   color: var(--text);
   background: rgba(255, 255, 255, 0.06);
 }
 
-.doc-note-item.is-active {
+.doc-page-item.is-active {
   color: var(--text);
   background: color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
-.doc-note-open {
+.doc-page-open {
   flex: 1;
   min-width: 0;
-  padding: 9px 12px;
+  padding: 7px 10px;
   text-align: left;
   font-family: inherit;
-  font-size: 13.5px;
+  font-size: 13px;
   color: inherit;
   background: none;
   border: none;
   cursor: pointer;
 }
 
-.doc-note-title {
+.doc-page-title {
   display: block;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.doc-note-dl {
+.doc-page-dl {
   flex: 0 0 auto;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   margin-right: 4px;
   opacity: 0;
   transition: opacity 0.15s ease;
 }
 
-.doc-note-item:hover .doc-note-dl,
-.doc-note-item.is-active .doc-note-dl {
+.doc-page-item:hover .doc-page-dl,
+.doc-page-item.is-active .doc-page-dl {
   opacity: 1;
+}
+
+.doc-add-page {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 1px;
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.doc-add-page:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .doc-main {
