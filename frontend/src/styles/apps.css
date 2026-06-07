@@ -1297,6 +1297,97 @@
   border-radius: var(--radius-sm);
 }
 
+/* Per-app history (voice/image → text), saved locally. */
+.mt-history {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--hairline);
+}
+
+.mt-history-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.mt-history-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.mt-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.mt-history-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s ease;
+}
+
+.mt-history-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mt-history-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.mt-history-snippet {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.mt-history-date {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.mt-history-del {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  font-size: 17px;
+  line-height: 1;
+  color: var(--text-secondary);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.mt-history-item:hover .mt-history-del {
+  opacity: 1;
+}
+
+.mt-history-del:hover {
+  color: #ff8f8f;
+}
+
 /* Audio input — dropzone, record, clip card */
 .audio-input {
   display: flex;
