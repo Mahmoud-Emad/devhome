@@ -9,7 +9,10 @@
 //
 // `onProgress` receives the normalized `{ phase, label, ratio, loaded, total }`.
 
-const MODEL_URL = 'https://github.com/Mahmoud-Emad/devhome/releases/download/models/denoiser_model.onnx';
+// Hosted on HuggingFace because it sends CORS headers, so the fetch works both in
+// the packed extension and in `npm run dev` (a plain localhost page has no
+// host_permissions to bypass CORS, and GitHub release downloads send no CORS).
+const MODEL_URL = 'https://huggingface.co/LEMAS-Project/LEMAS-Edit/resolve/main/pretrained_models/denoiser_model.onnx';
 const MODEL_CACHE = 'devhome-models';
 
 // Model I/O contract (verified against the export): 48 kHz mono, 10 ms hops.
