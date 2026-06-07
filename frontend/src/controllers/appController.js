@@ -65,7 +65,7 @@ export async function startApp() {
 
   let apps_;
   // Each pinnable app widget is gated by a Settings toggle (store key).
-  const HOME_GATES = { todaytodo: 'homeTasks', pdflib: 'homeBook' };
+  const HOME_GATES = { todaytodo: 'homeTasks', pdflib: 'homeBook', doccoon: 'homeNotes' };
 
   // Render home widgets (today's tasks, continue-reading) and refresh badges.
   async function refreshHome() {
@@ -137,7 +137,7 @@ export async function startApp() {
       if ('name' in patch || 'clock24h' in patch) renderTime();
       if ('searchEngine' in patch) renderSearchBar();
       if ('homeReadit' in patch) applyReadit();
-      if ('homeTasks' in patch || 'homeBook' in patch) refreshHome();
+      if ('homeTasks' in patch || 'homeBook' in patch || 'homeNotes' in patch) refreshHome();
       if ('homeWeather' in patch || 'weatherUnit' in patch) applyWeather();
       if ('homeFocus' in patch) applyFocus();
       if ('homeTips' in patch) applyTips();

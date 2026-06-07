@@ -11,6 +11,7 @@ const DEFAULTS = {
   homeReadit: true,
   homeTasks: true,
   homeBook: true,
+  homeNotes: true,
   homeWeather: false, // opt-in (the Tips card points users here)
   homeFocus: false, // opt-in
   homeTips: true,

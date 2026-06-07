@@ -97,6 +97,10 @@ function el(tag, className, text) {
   return node;
 }
 
+// Set by the home widget so the next open jumps to a note or starts a new one.
+let pendingNoteId = null;
+let pendingNew = false;
+
 export default {
   id: 'doccoon',
   name: 'Books & Notes',
@@ -104,6 +108,46 @@ export default {
   accent: '#a78bfa',
   order: 5,
   dialog: { size: 'xl' },
+
+  // Home card: your most recent notes + a quick "New note".
+  async widget(ctx) {
+    let notes;
+    try {
+      notes = (await getApi('notes')).notes || [];
+    } catch {
+      return null;
+    }
+    if (!notes.length) return null;
+
+    const card = el('div', 'widget-card');
+    card.style.setProperty('--accent', '#a78bfa');
+
+    const head = el('button', 'widget-head');
+    head.append(el('span', 'widget-title', 'Notes'), el('span', 'widget-count', String(notes.length)));
+    head.addEventListener('click', () => ctx.openApp('doccoon'));
+    card.append(head);
+
+    const list = el('div', 'widget-list');
+    notes.slice(0, 4).forEach((note) => {
+      const item = el('button', 'widget-note', note.title || 'Untitled');
+      item.title = note.title || 'Untitled';
+      item.addEventListener('click', () => {
+        pendingNoteId = note.id;
+        ctx.openApp('doccoon');
+      });
+      list.append(item);
+    });
+    card.append(list);
+
+    const add = el('button', 'widget-more', '+ New note');
+    add.addEventListener('click', () => {
+      pendingNew = true;
+      ctx.openApp('doccoon');
+    });
+    card.append(add);
+
+    return card;
+  },
 
   render(body) {
     let notes = [];
@@ -356,6 +400,20 @@ export default {
       }
       if (current && !notes.some((n) => n.id === current.id)) current = null;
       drawSidebar();
+      // Coming from the home widget: jump to a note or start a new one.
+      if (pendingNew) {
+        pendingNew = false;
+        await newNote();
+        return;
+      }
+      if (pendingNoteId) {
+        const id = pendingNoteId;
+        pendingNoteId = null;
+        if (notes.some((n) => n.id === id)) {
+          await openNote(id);
+          return;
+        }
+      }
       if (!notes.length) {
         showEmpty();
       } else if (!current) {

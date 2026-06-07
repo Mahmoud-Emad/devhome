@@ -1576,6 +1576,26 @@
   white-space: nowrap;
 }
 
+/* doccoon recent-note row */
+.widget-note {
+  width: 100%;
+  padding: 0;
+  text-align: left;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.widget-note:hover {
+  color: var(--accent);
+}
+
 .widget-more {
   align-self: flex-start;
   margin-top: 2px;

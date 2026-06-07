@@ -149,6 +149,11 @@ function preferences(state, onChange) {
       toggle(state.homeBook, (v) => onChange({ homeBook: v })),
     ),
     field(
+      'Pin notes',
+      'Show your recent notes on the home',
+      toggle(state.homeNotes, (v) => onChange({ homeNotes: v })),
+    ),
+    field(
       'Pin weather',
       'Show local weather on the home',
       toggle(state.homeWeather, (v) => onChange({ homeWeather: v })),
