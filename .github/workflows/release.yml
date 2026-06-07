@@ -55,7 +55,8 @@ jobs:
       - name: Generate release notes from commits
         run: |
           TAG="${GITHUB_REF_NAME}"
-          PREV="$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)"
+          # Only consider version tags (ignore non-release tags like `models`).
+          PREV="$(git describe --tags --abbrev=0 --match 'v*' "${TAG}^" 2>/dev/null || true)"
           # Skip release/dependency/merge bookkeeping commits — keep the real changes.
           SKIP='^- (Release v|Bump |Merge |chore: release)'
           RANGE="${PREV:+$PREV..}${TAG}"
