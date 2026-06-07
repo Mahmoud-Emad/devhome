@@ -1833,7 +1833,7 @@
 
 .doc-sidebar {
   flex: 0 0 auto;
-  width: 240px; /* overridden inline; drag-resizable */
+  width: 300px; /* overridden inline; drag-resizable */
   min-width: 200px;
   display: flex;
   flex-direction: column;
@@ -2183,10 +2183,6 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-}
-
-.button-primary.doc-danger {
-  background: #e5484d;
 }
 
 .doc-main {

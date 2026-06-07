@@ -2,6 +2,7 @@ import { VERSION } from '../data/releaseNotes.js';
 import { apps } from '../apps/index.js';
 import { getAppConfig, setAppConfig } from '../lib/appConfig.js';
 import { dataStore } from '../lib/dataStore.js';
+import { confirmDialog } from '../components/confirm.js';
 
 const ENGINES = [
   { value: 'google', label: 'Google' },
@@ -248,6 +249,8 @@ function wallpaperPanel(_state, _onChange, ctx) {
     del.title = b.custom ? 'Delete this wallpaper' : 'Remove this wallpaper';
     del.addEventListener('click', async (e) => {
       e.stopPropagation();
+      const what = b.custom ? 'Delete this wallpaper?' : 'Remove this wallpaper from the gallery?';
+      if (!(await confirmDialog(what))) return;
       await wp.remove(b.id);
       refresh();
     });

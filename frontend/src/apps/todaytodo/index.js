@@ -3,6 +3,7 @@
 // badge of open tasks, and a home widget showing what's left today.
 
 import { getApi, jsonApi } from '../../lib/api.js';
+import { confirmDialog } from '../../components/confirm.js';
 
 const ACCENT = '#fb923c';
 
@@ -265,6 +266,7 @@ export default {
       actions.append(
         iconButton(PENCIL, 'Edit', () => beginEdit(row, todo)),
         iconButton(TRASH, 'Delete', async () => {
+          if (!(await confirmDialog('Delete this task?'))) return;
           await jsonApi('DELETE', `todos/${todo.id}`);
           refresh();
         }),

@@ -3,6 +3,7 @@
 // reader (PDF.js) is a lazily-imported module so it isn't in the main bundle.
 
 import { getApi, jsonApi, callApi } from '../../lib/api.js';
+import { confirmDialog } from '../../components/confirm.js';
 
 const TRASH = `
   <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
@@ -281,6 +282,7 @@ const app = {
       remove.setAttribute('aria-label', 'Remove');
       remove.innerHTML = TRASH;
       remove.addEventListener('click', async () => {
+        if (!(await confirmDialog(`Remove “${book.title}” from your library?`))) return;
         await jsonApi('DELETE', `books/${book.id}`);
         load();
       });

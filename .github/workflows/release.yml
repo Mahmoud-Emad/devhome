@@ -56,17 +56,17 @@ jobs:
         run: |
           TAG="${GITHUB_REF_NAME}"
           PREV="$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)"
+          # Skip release/dependency/merge bookkeeping commits — keep the real changes.
+          SKIP='^- (Release v|Bump |Merge |chore: release)'
+          RANGE="${PREV:+$PREV..}${TAG}"
+          CHANGES="$(git log --no-merges --pretty='- %s (%h)' "$RANGE" | grep -vE "$SKIP" || true)"
           {
+            echo "### Changes${PREV:+ since $PREV}"
+            echo
+            echo "${CHANGES:-- (no notable changes)}"
             if [ -n "$PREV" ]; then
-              echo "### Changes since ${PREV}"
-              echo
-              git log --no-merges --pretty='- %s (%h)' "${PREV}..${TAG}"
               echo
               echo "**Full Changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/${PREV}...${TAG}"
-            else
-              echo "### Changes"
-              echo
-              git log --no-merges --pretty='- %s (%h)' "${TAG}"
             fi
           } > RELEASE_NOTES.md
           echo "----- generated notes -----"

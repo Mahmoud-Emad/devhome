@@ -7,6 +7,7 @@ import { apps } from '../apps/index.js';
 import { isInstalled } from '../models/installed.js';
 import { appModel } from '../lib/appModels.js';
 import { install, uninstall, currentOp, isBusy, opError, onProgress } from '../lib/installManager.js';
+import { confirmDialog } from '../components/confirm.js';
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -40,10 +41,18 @@ export function renderAppStore(container) {
 
     const btn = el('button', 'store-btn-action');
     btn.type = 'button';
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       if (isBusy(app.id)) return;
-      if (isInstalled(app.id)) uninstall(app.id);
-      else install(app.id);
+      if (isInstalled(app.id)) {
+        const model = appModel(app.id);
+        const msg = model
+          ? `Uninstall ${app.name}? Its model (${model.size}) will be removed.`
+          : `Uninstall ${app.name}?`;
+        if (!(await confirmDialog(msg, { confirmLabel: 'Uninstall' }))) return;
+        uninstall(app.id);
+      } else {
+        install(app.id);
+      }
     });
 
     // Reflect the current state (called on every manager event).
