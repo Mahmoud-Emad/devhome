@@ -121,6 +121,24 @@ export async function prefetchDenoiseModel(onProgress) {
   await fetchModelBytes(onProgress);
 }
 
+// Whether the model is already downloaded (cached).
+export async function isDenoiseModelCached() {
+  try {
+    return !!(await (await caches.open(MODEL_CACHE)).match(MODEL_URL));
+  } catch {
+    return false;
+  }
+}
+
+// Free the cached model (uninstall).
+export async function removeDenoiseModel() {
+  try {
+    await (await caches.open(MODEL_CACHE)).delete(MODEL_URL);
+  } catch {
+    /* ignore */
+  }
+}
+
 // Denoise an audio file; resolves to a WAV Blob of the cleaned audio.
 export async function denoiseAudio(file, { onProgress } = {}) {
   const { ort, session } = await loadSession(onProgress);

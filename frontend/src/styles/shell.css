@@ -639,9 +639,29 @@
   white-space: nowrap;
 }
 
-.store-item .button-primary,
-.store-item .button-secondary {
+.store-actions {
   flex: 0 0 auto;
+}
+
+/* Fixed width so the label/spinner/percent swap doesn't reflow the row. */
+.store-btn-action {
+  min-width: 108px;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.store-btn-action:disabled {
+  cursor: default;
+}
+
+.store-error {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #ff9b9b;
+}
+
+.store-error[hidden] {
+  display: none;
 }
 
 .settings-tabs {

@@ -94,6 +94,16 @@ export async function prefetchModel(model = 'Xenova/whisper-tiny', onProgress) {
   await transcriber.dispose?.();
 }
 
+// Free the cached Whisper model files (uninstall). Transformers.js stores model
+// weights in the 'transformers-cache' Cache Storage.
+export async function removeWhisperCache() {
+  try {
+    await caches.delete('transformers-cache');
+  } catch {
+    /* ignore */
+  }
+}
+
 export async function transcribeAudio(file, { model = 'Xenova/whisper-tiny', language, onProgress } = {}) {
   const transcriber = await loadPipeline(model, onProgress);
   try {
