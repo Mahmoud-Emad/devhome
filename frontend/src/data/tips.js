@@ -8,6 +8,7 @@ export const tips = [
   'Highlight PDF text, add notes, and browse them in Notes.',
   'Maximize a PDF book to read fullscreen — the toolbar auto-hides.',
   'App windows can be dragged, resized, maximized, or minimized.',
+  'Add or remove apps anytime from the App Store (top-right).',
   'Continue reading reopens your latest PDF where you left off.',
   'Click the shuffle icon (bottom-right) for a fresh wallpaper.',
   'Pin or unpin any home card from Settings → Preferences.',

@@ -1,4 +1,5 @@
 import { apps } from '../apps/index.js';
+import { installedApps, isInstalled } from '../models/installed.js';
 import { createDialog } from '../components/dialog.js';
 import { renderAppDock } from '../views/appDock.js';
 
@@ -43,12 +44,13 @@ export function createAppsController({ dockEl, onAfterClose }) {
     openApp(app);
   }
 
-  const dock = renderAppDock(dockEl, apps, toggleApp);
+  // The dock shows only installed apps; re-rendered when the set changes.
+  let dock = renderAppDock(dockEl, installedApps(), toggleApp);
 
-  // Refresh each app's dock notification badge.
+  // Refresh each installed app's dock notification badge.
   async function refreshBadges() {
     await Promise.all(
-      apps.map(async (app) => {
+      installedApps().map(async (app) => {
         if (!app.badge) return;
         try {
           dock.setBadge(app.id, await app.badge());
@@ -57,6 +59,16 @@ export function createAppsController({ dockEl, onAfterClose }) {
         }
       }),
     );
+  }
+
+  // Re-render the dock after an install/uninstall, closing any open window whose
+  // app was just removed.
+  function refresh() {
+    for (const [id, entry] of windows) {
+      if (!isInstalled(id) && entry.win.isVisible()) entry.win.close();
+    }
+    dock = renderAppDock(dockEl, installedApps(), toggleApp);
+    refreshBadges();
   }
 
   // Deep link: open an app directly with #app=<id> in the URL.
@@ -73,5 +85,6 @@ export function createAppsController({ dockEl, onAfterClose }) {
       if (app) openApp(app);
     },
     refreshBadges,
+    refresh,
   };
 }

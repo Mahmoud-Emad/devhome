@@ -22,6 +22,7 @@ const DEFAULTS = {
   lastBgId: null,
   hiddenBgIds: [], // bundled wallpapers the user removed (restorable via Settings)
   onboarded: false, // first-run onboarding shows once, then prepares the AI models
+  installedApps: null, // null → DEFAULT_APPS; otherwise the user's chosen app ids
   apps: {},
 };
 

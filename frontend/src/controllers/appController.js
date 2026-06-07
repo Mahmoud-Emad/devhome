@@ -9,9 +9,11 @@ import { renderFocus, stopFocus } from '../views/focusTimer.js';
 import { renderDockTip, stopDockTip } from '../views/tips.js';
 import { renderOnboarding } from '../views/onboarding.js';
 import { renderReleaseNotes, VERSION } from '../data/releaseNotes.js';
+import { isInstalled } from '../models/installed.js';
 import { createBackgroundController } from './backgroundController.js';
 import { createSettingsController } from './settingsController.js';
 import { createAppsController } from './appsController.js';
+import { createAppStoreController } from './appStoreController.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -70,7 +72,7 @@ export async function startApp() {
     const widgets = (
       await Promise.all(
         apps.map(async (app) => {
-          if (!app.widget) return null;
+          if (!app.widget || !isInstalled(app.id)) return null;
           const gate = HOME_GATES[app.id];
           if (gate && !store.get(gate)) return null;
           try {
@@ -118,6 +120,14 @@ export async function startApp() {
   applyTips();
 
   setupReleaseNotes();
+
+  createAppStoreController({
+    buttonEl: $('store-btn'),
+    onChange: () => {
+      apps_.refresh();
+      refreshHome();
+    },
+  });
 
   createSettingsController({
     buttonEl: $('settings-btn'),

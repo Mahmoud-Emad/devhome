@@ -561,6 +561,89 @@
   width: min(620px, 94vw);
 }
 
+/* App Store */
+.store-dialog {
+  width: min(560px, 94vw);
+}
+
+.store-intro {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.store-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.store-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.store-tile {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 11px;
+}
+
+.store-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.store-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.store-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.store-tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.store-desc {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.store-item .button-primary,
+.store-item .button-secondary {
+  flex: 0 0 auto;
+}
+
 .settings-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -997,6 +1080,55 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
+}
+
+.onboarding-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 2px;
+  text-align: left;
+}
+
+.onboarding-tool {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.onboarding-tool:hover {
+  border-color: var(--hairline-strong);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.onboarding-tool-check {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  accent-color: var(--accent);
+}
+
+.onboarding-tool-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.onboarding-tool-name {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.onboarding-tool-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .onboarding-body {
