@@ -1832,13 +1832,54 @@
 }
 
 .doc-sidebar {
-  flex: 0 0 210px;
+  flex: 0 0 auto;
+  width: 240px; /* overridden inline; drag-resizable */
+  min-width: 200px;
   display: flex;
   flex-direction: column;
-  padding-right: 14px;
-  margin-right: 18px;
+  padding-right: 12px;
   border-right: 1px solid var(--hairline);
   overflow: hidden;
+}
+
+/* Draggable divider between the sidebar and the editor. */
+.doc-resizer {
+  flex: 0 0 12px;
+  align-self: stretch;
+  cursor: col-resize;
+  position: relative;
+}
+
+.doc-resizer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 5px;
+  width: 2px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.doc-resizer:hover::after,
+.doc-layout.is-resizing .doc-resizer::after {
+  background: var(--accent);
+}
+
+.doc-layout.is-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+/* In the narrow overlay mode the sidebar floats; no resizing. */
+.doc-layout.is-narrow .doc-resizer,
+.doc-layout.collapsed .doc-resizer {
+  display: none;
+}
+
+.doc-main {
+  padding-left: 6px;
 }
 
 .doc-sidebar-head {
@@ -1880,21 +1921,6 @@
   align-items: center;
   gap: 2px;
   border-radius: var(--radius-sm);
-}
-
-.doc-collection-chevron {
-  flex: 0 0 auto;
-  width: 22px;
-  height: 28px;
-  color: var(--text-secondary);
-}
-
-.doc-collection-chevron svg {
-  transition: transform 0.15s ease;
-}
-
-.doc-collection.is-expanded > .doc-collection-row .doc-collection-chevron svg {
-  transform: rotate(90deg);
 }
 
 .doc-collection-open {
@@ -1944,10 +1970,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Expanded collection row: inline-editable name + delete, with its pages below. */
+/* Expanded collection row: its name still toggles collapse; actions on the right. */
 .doc-collection.is-expanded > .doc-collection-row {
-  gap: 6px;
-  padding: 4px 8px 4px 2px;
   background: rgba(255, 255, 255, 0.05);
 }
 
@@ -1956,17 +1980,23 @@
   background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
-.doc-collection-rename {
-  flex: 1;
-  min-width: 0;
-  padding: 0;
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--text);
-  background: transparent;
-  border: none;
-  outline: none;
+.doc-collection-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding-right: 4px;
+}
+
+.doc-collection-edit {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  color: var(--text-secondary);
+}
+
+.doc-collection-edit:hover {
+  color: var(--accent);
 }
 
 .doc-collection-del {
@@ -2117,6 +2147,44 @@
   background: color-mix(in srgb, var(--accent) 15%, transparent);
 }
 
+/* Rename dialog (collection / page title) */
+.doc-prompt-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.doc-prompt {
+  width: min(360px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  background: rgba(28, 28, 32, 0.98);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+}
+
+.doc-prompt-label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.doc-prompt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .doc-main {
   flex: 1;
   min-width: 0;
@@ -2167,26 +2235,41 @@
   color: #ff8f8f;
 }
 
-.doc-title {
+/* Page title — display-only; the pencil (or clicking it) opens a rename dialog. */
+.doc-title-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px 10px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.doc-title-text {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
   font-family: inherit;
   font-size: 24px;
   font-weight: 700;
   color: var(--text);
-  background: transparent;
+  background: none;
   border: none;
-  border-bottom: 1px solid var(--hairline);
-  outline: none;
-  padding: 4px 2px 10px;
-  transition: border-color 0.2s ease;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.doc-title:focus {
-  border-bottom-color: var(--accent);
-}
-
-.doc-title::placeholder {
+.doc-title-edit {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
   color: var(--text-secondary);
-  opacity: 0.6;
+}
+
+.doc-title-edit:hover {
+  color: var(--accent);
 }
 
 /* The editor wrapper must be a flex column that fills doc-main, otherwise the

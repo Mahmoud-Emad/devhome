@@ -93,10 +93,11 @@ const FOLDER = `
     <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
   </svg>`;
 
-const CHEVRON = `
+const PENCIL = `
   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-    stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M9 6l6 6-6 6"></path>
+    stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 20h9"></path>
+    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path>
   </svg>`;
 
 // Below this layout width the sidebar collapses to an overlay and the editor
@@ -113,6 +114,8 @@ function el(tag, className, text) {
 // Set by the home widget so the next open jumps to a collection / starts a new one.
 let pendingCollectionId = null;
 let pendingNewCollection = false;
+// Sidebar width, drag-resizable; persists across opens within the session.
+let sidebarWidth = 240;
 
 export default {
   id: 'doccoon',
@@ -171,15 +174,39 @@ export default {
     let userView = 'split'; // the view to restore when there's room again
     let narrow = false;
     let saveTimer = null;
-    let renameTimer = null;
 
     const layout = el('div', 'doc-layout');
     const sidebar = el('aside', 'doc-sidebar');
+    sidebar.style.width = `${sidebarWidth}px`;
+    const resizer = el('div', 'doc-resizer');
     const main = el('div', 'doc-main');
-    layout.append(sidebar, main);
+    layout.append(sidebar, resizer, main);
     body.replaceChildren(layout);
 
     const toggleSidebar = () => layout.classList.toggle('collapsed');
+
+    // Drag the divider to resize the sidebar (min 200px), kept for the session.
+    resizer.addEventListener('pointerdown', (e) => {
+      if (narrow) return;
+      e.preventDefault();
+      const startX = e.clientX;
+      const startW = sidebar.offsetWidth;
+      resizer.setPointerCapture(e.pointerId);
+      layout.classList.add('is-resizing');
+      const move = (ev) => {
+        const max = Math.max(200, layout.clientWidth - 360); // leave room for the editor
+        sidebarWidth = Math.min(max, Math.max(200, startW + (ev.clientX - startX)));
+        sidebar.style.width = `${sidebarWidth}px`;
+      };
+      const up = () => {
+        resizer.releasePointerCapture(e.pointerId);
+        layout.classList.remove('is-resizing');
+        resizer.removeEventListener('pointermove', move);
+        resizer.removeEventListener('pointerup', up);
+      };
+      resizer.addEventListener('pointermove', move);
+      resizer.addEventListener('pointerup', up);
+    });
 
     // Undo toast for deletes (stays for 30s).
     const undoBar = el('div', 'doc-undo');
@@ -211,6 +238,41 @@ export default {
       URL.revokeObjectURL(url);
     }
 
+    // Small modal to edit a title; resolves to the new value, or null if cancelled.
+    function promptTitle(label, value) {
+      return new Promise((resolve) => {
+        const overlay = el('div', 'doc-prompt-overlay');
+        const card = el('div', 'doc-prompt');
+        const input = el('input', 'input');
+        input.value = value || '';
+        const actions = el('div', 'doc-prompt-actions');
+        const cancel = el('button', 'button-secondary', 'Cancel');
+        const ok = el('button', 'button-primary', 'Save');
+        actions.append(cancel, ok);
+        card.append(el('p', 'doc-prompt-label', label), input, actions);
+        overlay.append(card);
+        layout.append(overlay);
+
+        const close = (val) => {
+          overlay.remove();
+          resolve(val);
+        };
+        cancel.addEventListener('click', () => close(null));
+        ok.addEventListener('click', () => close(input.value.trim()));
+        overlay.addEventListener('click', (e) => {
+          if (e.target === overlay) close(null);
+        });
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') close(input.value.trim());
+          else if (e.key === 'Escape') close(null);
+        });
+        requestAnimationFrame(() => {
+          input.focus();
+          input.select();
+        });
+      });
+    }
+
     // --- editor (built once, kept stable so the textarea doesn't lose focus) ---
     const editor = el('div', 'doc-editor');
     editor.dataset.view = view;
@@ -233,8 +295,20 @@ export default {
     del.innerHTML = TRASH;
     toolbar.append(burger, viewToggle, status, count, del);
 
-    const titleInput = el('input', 'doc-title');
-    titleInput.placeholder = 'Untitled';
+    // Page title: display-only; rename via a small dialog (no in-place editing).
+    const titleBar = el('div', 'doc-title-bar');
+    const titleText = el('button', 'doc-title-text');
+    titleText.title = 'Rename page';
+    const titleEdit = el('button', 'icon-button doc-title-edit');
+    titleEdit.innerHTML = PENCIL;
+    titleEdit.title = 'Rename page';
+    titleEdit.setAttribute('aria-label', 'Rename page');
+    titleBar.append(titleText, titleEdit);
+    const setTitleText = () => {
+      titleText.textContent = current && current.title !== 'Untitled' ? current.title : 'Untitled';
+    };
+    titleText.addEventListener('click', renamePage);
+    titleEdit.addEventListener('click', renamePage);
 
     const area = el('div', 'doc-editor-area');
     const source = el('textarea', 'doc-source');
@@ -250,7 +324,7 @@ export default {
     const preview = el('div', 'md-preview doc-preview');
     area.append(source, preview);
 
-    editor.append(toolbar, titleInput, area);
+    editor.append(toolbar, titleBar, area);
 
     function setView(next) {
       view = next;
@@ -278,9 +352,11 @@ export default {
       layout.classList.toggle('is-narrow', narrow);
       if (narrow) {
         layout.classList.add('collapsed');
+        sidebar.style.width = ''; // let the overlay CSS size it
         setView('edit');
       } else {
         layout.classList.remove('collapsed');
+        sidebar.style.width = `${sidebarWidth}px`; // restore the resizable width
         if (view !== userView) {
           setView(userView);
           renderPreview();
@@ -327,24 +403,37 @@ export default {
     async function save() {
       if (!current) return;
       try {
-        const updated = await jsonApi('PATCH', `pages/${current.id}`, {
-          title: titleInput.value,
-          content: source.value,
-        });
+        const updated = await jsonApi('PATCH', `pages/${current.id}`, { content: source.value });
         current = { ...current, ...updated };
-        // Keep the cached page list in sync so re-rendering the sidebar doesn't
-        // revert the title to its stale value.
         const entry = pagesByCol.get(current.collectionId)?.find((p) => p.id === current.id);
-        if (entry) {
-          entry.title = current.title;
-          entry.updated = current.updated;
-        }
-        const item = sidebar.querySelector(`.doc-page-item[data-id="${current.id}"] .doc-page-title`);
-        if (item) item.textContent = current.title || 'Untitled';
+        if (entry) entry.updated = current.updated;
         status.textContent = 'Saved';
       } catch (err) {
         status.textContent = err.message;
       }
+    }
+
+    // Rename the open page via the dialog, then sync the editor + sidebar.
+    async function renamePage() {
+      if (!current) return;
+      const name = await promptTitle('Page title', current.title === 'Untitled' ? '' : current.title);
+      if (name == null) return;
+      await flushSave();
+      try {
+        const updated = await jsonApi('PATCH', `pages/${current.id}`, { title: name || 'Untitled' });
+        current = { ...current, ...updated };
+      } catch (err) {
+        status.textContent = err.message;
+        return;
+      }
+      setTitleText();
+      const entry = pagesByCol.get(current.collectionId)?.find((p) => p.id === current.id);
+      if (entry) {
+        entry.title = current.title;
+        entry.updated = current.updated;
+      }
+      const item = sidebar.querySelector(`.doc-page-item[data-id="${current.id}"] .doc-page-title`);
+      if (item) item.textContent = current.title || 'Untitled';
     }
 
     // Persist any pending (debounced) edit immediately — e.g. before switching
@@ -357,7 +446,6 @@ export default {
       }
     }
 
-    titleInput.addEventListener('input', scheduleSave);
     source.addEventListener('input', () => {
       updateCount();
       schedulePreview();
@@ -367,7 +455,7 @@ export default {
     del.addEventListener('click', async () => {
       if (!current) return;
       const colId = current.collectionId;
-      const snapshot = { title: titleInput.value, content: source.value };
+      const snapshot = { title: current.title, content: source.value };
       await jsonApi('DELETE', `pages/${current.id}`);
       const remaining = (pagesByCol.get(colId) || []).filter((p) => p.id !== current.id);
       pagesByCol.set(colId, remaining);
@@ -417,23 +505,30 @@ export default {
       const colEl = el('div', 'doc-collection' + (isOpen ? ' is-expanded' : '') + (hasCurrent ? ' is-active' : ''));
 
       const row = el('div', 'doc-collection-row');
-      const chevron = el('button', 'icon-button doc-collection-chevron');
-      chevron.innerHTML = CHEVRON;
-      chevron.title = isOpen ? 'Collapse' : 'Expand';
-      chevron.setAttribute('aria-label', chevron.title);
-      chevron.addEventListener('click', () => toggleExpand(col.id));
-
       const icon = el('span', 'doc-collection-icon');
       icon.innerHTML = FOLDER;
       const pageCount = pagesByCol.get(col.id)?.length ?? col.pageCount;
-      const countEl = el('span', 'doc-collection-count', String(pageCount));
+
+      // Clicking the collection itself expands / collapses it.
+      const open = el('button', 'doc-collection-open');
+      open.append(
+        icon,
+        el('span', 'doc-collection-name', col.name || 'Untitled'),
+        el('span', 'doc-collection-count', String(pageCount)),
+      );
+      open.addEventListener('click', () => toggleExpand(col.id));
+      row.append(open);
 
       if (isOpen) {
-        // The expanded collection's name is editable inline.
-        const name = el('input', 'doc-collection-rename');
-        name.value = col.name || '';
-        name.placeholder = 'Collection name';
-        name.addEventListener('input', () => scheduleRename(col.id, name.value));
+        const actions = el('div', 'doc-collection-actions');
+        const edit = el('button', 'icon-button doc-collection-edit');
+        edit.title = 'Rename collection';
+        edit.setAttribute('aria-label', 'Rename collection');
+        edit.innerHTML = PENCIL;
+        edit.addEventListener('click', (e) => {
+          e.stopPropagation();
+          renameCollection(col);
+        });
         const dlCol = el('button', 'icon-button doc-collection-dl');
         dlCol.title = 'Download collection (.zip)';
         dlCol.setAttribute('aria-label', 'Download collection');
@@ -450,12 +545,8 @@ export default {
           e.stopPropagation();
           deleteCollection(col.id);
         });
-        row.append(chevron, icon, name, countEl, dlCol, remove);
-      } else {
-        const open = el('button', 'doc-collection-open');
-        open.append(icon, el('span', 'doc-collection-name', col.name || 'Untitled'), countEl);
-        open.addEventListener('click', () => toggleExpand(col.id));
-        row.append(chevron, open);
+        actions.append(edit, dlCol, remove);
+        row.append(actions);
       }
       colEl.append(row);
 
@@ -486,13 +577,16 @@ export default {
       sidebar.replaceChildren(head, list);
     }
 
-    function scheduleRename(id, name) {
-      const col = collections.find((c) => c.id === id);
-      if (col) col.name = name; // keep in-memory in sync without a redraw
-      clearTimeout(renameTimer);
-      renameTimer = setTimeout(() => {
-        jsonApi('PATCH', `collections/${id}`, { name }).catch(() => {});
-      }, 500);
+    async function renameCollection(col) {
+      const name = await promptTitle('Collection name', col.name || '');
+      if (name == null) return;
+      try {
+        await jsonApi('PATCH', `collections/${col.id}`, { name: name || 'Untitled collection' });
+        col.name = name || 'Untitled collection';
+        drawSidebar();
+      } catch (err) {
+        status.textContent = err.message;
+      }
     }
 
     // Download a page as a .md file. Uses the live editor value for the open page
@@ -501,7 +595,7 @@ export default {
       let title;
       let content;
       if (current && current.id === id) {
-        title = titleInput.value.trim() || 'Untitled';
+        title = current.title || 'Untitled';
         content = source.value;
       } else {
         try {
@@ -534,7 +628,7 @@ export default {
       for (const p of pageList) {
         const page =
           current && current.id === p.id
-            ? { title: titleInput.value.trim() || 'Untitled', content: source.value }
+            ? { title: current.title || 'Untitled', content: source.value }
             : await getApi(`pages/${p.id}`);
         const title = page.title || 'Untitled';
         const base = sanitize(title) || 'page';
@@ -578,7 +672,7 @@ export default {
         return;
       }
       expanded.add(current.collectionId); // make sure it's visible in the tree
-      titleInput.value = current.title === 'Untitled' ? '' : current.title;
+      setTitleText();
       source.value = current.content || '';
       updateCount();
       renderPreview();
@@ -597,26 +691,20 @@ export default {
       current = page;
       drawSidebar();
       await openPage(page.id);
-      requestAnimationFrame(() => titleInput.focus());
+      requestAnimationFrame(() => source.focus());
     }
 
     async function newCollection() {
       await flushSave();
-      const col = await jsonApi('POST', 'collections', { name: 'New collection' });
+      const name = await promptTitle('Name your collection', '');
+      if (name == null) return; // cancelled — nothing created
+      const col = await jsonApi('POST', 'collections', { name: name || 'New collection' });
       collections = [{ id: col.id, name: col.name, updated: col.updated, pageCount: 0 }, ...collections];
       pagesByCol.set(col.id, []);
       expanded.add(col.id);
       current = null;
       drawSidebar();
       showPlaceholder();
-      // Focus the name so the user can title it (e.g. the book) straight away.
-      requestAnimationFrame(() => {
-        const input = sidebar.querySelector('.doc-collection.is-expanded .doc-collection-rename');
-        if (input) {
-          input.focus();
-          input.select();
-        }
-      });
     }
 
     async function deleteCollection(id) {
