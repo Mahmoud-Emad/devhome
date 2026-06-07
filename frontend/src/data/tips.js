@@ -4,6 +4,7 @@ export const tips = [
   'Enable a weather card or focus timer in Settings → Preferences.',
   'Favorite a wallpaper (★) in Settings so it won’t rotate.',
   'Upload a custom wallpaper, then crop and frame it to fit.',
+  'Clean up a noisy recording with Denoise — all on your device.',
   'Highlight PDF text, add notes, and browse them in Notes.',
   'Maximize a PDF book to read fullscreen — the toolbar auto-hides.',
   'App windows can be dragged, resized, maximized, or minimized.',
