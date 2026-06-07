@@ -2198,29 +2198,13 @@
 .doc-title-text {
   flex: 1;
   min-width: 0;
-  padding: 0;
-  text-align: left;
-  font-family: inherit;
+  margin: 0;
   font-size: 24px;
   font-weight: 700;
   color: var(--text);
-  background: none;
-  border: none;
-  cursor: pointer;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-
-.doc-title-edit {
-  flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
-  color: var(--text-secondary);
-}
-
-.doc-title-edit:hover {
-  color: var(--accent);
 }
 
 /* The editor wrapper must be a flex column that fills doc-main, otherwise the

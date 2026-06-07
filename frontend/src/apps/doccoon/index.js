@@ -325,26 +325,15 @@ export default {
     info.addEventListener('click', showLinkHelp);
     const status = el('span', 'doc-status');
     const count = el('span', 'doc-count');
-    const del = el('button', 'icon-button doc-delete');
-    del.title = 'Delete page';
-    del.setAttribute('aria-label', 'Delete page');
-    del.innerHTML = TRASH;
-    toolbar.append(burger, viewToggle, info, status, count, del);
+    toolbar.append(burger, viewToggle, info, status, count);
 
-    // Page title: display-only; rename via a small dialog (no in-place editing).
+    // Page title — display only. Rename/delete live in the page's right-click menu.
     const titleBar = el('div', 'doc-title-bar');
-    const titleText = el('button', 'doc-title-text');
-    titleText.title = 'Rename page';
-    const titleEdit = el('button', 'icon-button doc-title-edit');
-    titleEdit.innerHTML = PENCIL;
-    titleEdit.title = 'Rename page';
-    titleEdit.setAttribute('aria-label', 'Rename page');
-    titleBar.append(titleText, titleEdit);
+    const titleText = el('h2', 'doc-title-text');
+    titleBar.append(titleText);
     const setTitleText = () => {
       titleText.textContent = current && current.title !== 'Untitled' ? current.title : 'Untitled';
     };
-    titleText.addEventListener('click', () => renamePage());
-    titleEdit.addEventListener('click', () => renamePage());
 
     const area = el('div', 'doc-editor-area');
     const source = el('textarea', 'doc-source');
@@ -665,8 +654,6 @@ export default {
       schedulePreview();
       scheduleSave();
     });
-
-    del.addEventListener('click', () => deletePage());
 
     // --- sidebar (a tree of collections → pages) ---
     function pageRow(page, colId) {
