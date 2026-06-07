@@ -1,7 +1,7 @@
 // doccoon — markdown notes, Notion-style. Notes are organized into collections
-// (a notebook, e.g. per book), each holding one or more Markdown pages. A sidebar
-// lists collections (the active one expands to its pages) next to an editor with
-// an optional live preview. CRUD lives in doccoon.local.js (IndexedDB).
+// (a notebook, e.g. per book), each holding one or more Markdown pages. The
+// sidebar is a tree: each collection expands/collapses to reveal its pages, next
+// to an editor with an optional live preview. CRUD lives in doccoon.local.js.
 
 import { Marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
@@ -93,6 +93,12 @@ const FOLDER = `
     <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
   </svg>`;
 
+const CHEVRON = `
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M9 6l6 6-6 6"></path>
+  </svg>`;
+
 // Below this layout width the sidebar collapses to an overlay and the editor
 // drops the split preview (no room for two panes).
 const NARROW = 640;
@@ -158,8 +164,8 @@ export default {
 
   render(body) {
     let collections = []; // [{ id, name, updated, pageCount }]
-    let pages = []; // pages of the active collection [{ id, title, updated }]
-    let activeColId = null;
+    const pagesByCol = new Map(); // collectionId -> [{ id, title, updated }] (cached when expanded)
+    const expanded = new Set(); // expanded collection ids
     let current = null; // the open page (full record)
     let view = 'split'; // 'split' | 'edit'
     let userView = 'split'; // the view to restore when there's room again
@@ -174,6 +180,36 @@ export default {
     body.replaceChildren(layout);
 
     const toggleSidebar = () => layout.classList.toggle('collapsed');
+
+    // Undo toast for deletes (stays for 30s).
+    const undoBar = el('div', 'doc-undo');
+    undoBar.hidden = true;
+    layout.append(undoBar);
+    let undoTimer = null;
+    function showUndo(message, onUndo) {
+      clearTimeout(undoTimer);
+      const btn = el('button', 'doc-undo-btn', 'Undo');
+      btn.addEventListener('click', async () => {
+        clearTimeout(undoTimer);
+        undoBar.hidden = true;
+        await onUndo();
+      });
+      undoBar.replaceChildren(el('span', 'doc-undo-msg', message), btn);
+      undoBar.hidden = false;
+      undoTimer = setTimeout(() => {
+        undoBar.hidden = true;
+      }, 30000);
+    }
+
+    const sanitize = (s) => (s || '').replace(/[\\/:*?"<>|]+/g, '-').trim();
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
 
     // --- editor (built once, kept stable so the textarea doesn't lose focus) ---
     const editor = el('div', 'doc-editor');
@@ -296,9 +332,9 @@ export default {
           content: source.value,
         });
         current = { ...current, ...updated };
-        // Keep the in-memory page list in sync so re-rendering the sidebar doesn't
+        // Keep the cached page list in sync so re-rendering the sidebar doesn't
         // revert the title to its stale value.
-        const entry = pages.find((p) => p.id === current.id);
+        const entry = pagesByCol.get(current.collectionId)?.find((p) => p.id === current.id);
         if (entry) {
           entry.title = current.title;
           entry.updated = current.updated;
@@ -330,12 +366,111 @@ export default {
 
     del.addEventListener('click', async () => {
       if (!current) return;
+      const colId = current.collectionId;
+      const snapshot = { title: titleInput.value, content: source.value };
       await jsonApi('DELETE', `pages/${current.id}`);
+      const remaining = (pagesByCol.get(colId) || []).filter((p) => p.id !== current.id);
+      pagesByCol.set(colId, remaining);
       current = null;
-      await loadPages();
+      drawSidebar();
+      if (remaining.length) await openPage(remaining[0].id);
+      else showPlaceholder();
+      showUndo('Page deleted', async () => {
+        const restored = await jsonApi('POST', `collections/${colId}/pages`, snapshot);
+        pagesByCol.set(colId, [
+          { id: restored.id, title: restored.title, updated: restored.updated },
+          ...(pagesByCol.get(colId) || []),
+        ]);
+        expanded.add(colId);
+        await openPage(restored.id);
+      });
     });
 
-    // --- sidebar (collections → the active collection's pages) ---
+    // --- sidebar (a tree of collections → pages) ---
+    function pageRow(page) {
+      const item = el('div', 'doc-page-item' + (page.id === current?.id ? ' is-active' : ''));
+      item.dataset.id = page.id;
+
+      const open = el('button', 'doc-page-open');
+      open.append(el('span', 'doc-page-title', page.title || 'Untitled'));
+      open.addEventListener('click', () => {
+        openPage(page.id);
+        if (narrow) layout.classList.add('collapsed');
+      });
+
+      const dl = el('button', 'icon-button doc-page-dl');
+      dl.title = 'Download as Markdown';
+      dl.setAttribute('aria-label', 'Download as Markdown');
+      dl.innerHTML = DOWNLOAD;
+      dl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        downloadPage(page.id);
+      });
+
+      item.append(open, dl);
+      return item;
+    }
+
+    function collectionEl(col) {
+      const isOpen = expanded.has(col.id);
+      const hasCurrent = current?.collectionId === col.id;
+      const colEl = el('div', 'doc-collection' + (isOpen ? ' is-expanded' : '') + (hasCurrent ? ' is-active' : ''));
+
+      const row = el('div', 'doc-collection-row');
+      const chevron = el('button', 'icon-button doc-collection-chevron');
+      chevron.innerHTML = CHEVRON;
+      chevron.title = isOpen ? 'Collapse' : 'Expand';
+      chevron.setAttribute('aria-label', chevron.title);
+      chevron.addEventListener('click', () => toggleExpand(col.id));
+
+      const icon = el('span', 'doc-collection-icon');
+      icon.innerHTML = FOLDER;
+      const pageCount = pagesByCol.get(col.id)?.length ?? col.pageCount;
+      const countEl = el('span', 'doc-collection-count', String(pageCount));
+
+      if (isOpen) {
+        // The expanded collection's name is editable inline.
+        const name = el('input', 'doc-collection-rename');
+        name.value = col.name || '';
+        name.placeholder = 'Collection name';
+        name.addEventListener('input', () => scheduleRename(col.id, name.value));
+        const dlCol = el('button', 'icon-button doc-collection-dl');
+        dlCol.title = 'Download collection (.zip)';
+        dlCol.setAttribute('aria-label', 'Download collection');
+        dlCol.innerHTML = DOWNLOAD;
+        dlCol.addEventListener('click', (e) => {
+          e.stopPropagation();
+          downloadCollection(col.id);
+        });
+        const remove = el('button', 'icon-button doc-collection-del');
+        remove.title = 'Delete collection';
+        remove.setAttribute('aria-label', 'Delete collection');
+        remove.innerHTML = TRASH;
+        remove.addEventListener('click', (e) => {
+          e.stopPropagation();
+          deleteCollection(col.id);
+        });
+        row.append(chevron, icon, name, countEl, dlCol, remove);
+      } else {
+        const open = el('button', 'doc-collection-open');
+        open.append(icon, el('span', 'doc-collection-name', col.name || 'Untitled'), countEl);
+        open.addEventListener('click', () => toggleExpand(col.id));
+        row.append(chevron, open);
+      }
+      colEl.append(row);
+
+      if (isOpen) {
+        const pagesList = el('div', 'doc-page-list');
+        for (const page of pagesByCol.get(col.id) || []) pagesList.append(pageRow(page));
+        const addPage = el('button', 'doc-add-page');
+        addPage.innerHTML = `${PLUS}<span>New page</span>`;
+        addPage.addEventListener('click', () => newPage(col.id));
+        pagesList.append(addPage);
+        colEl.append(pagesList);
+      }
+      return colEl;
+    }
+
     function drawSidebar() {
       const head = el('div', 'doc-sidebar-head');
       head.append(el('span', 'doc-sidebar-title', 'Notes'));
@@ -347,72 +482,7 @@ export default {
       head.append(addCol);
 
       const list = el('div', 'doc-collection-list');
-      for (const col of collections) {
-        const isActive = col.id === activeColId;
-        const colEl = el('div', 'doc-collection' + (isActive ? ' is-active' : ''));
-
-        const row = el('div', 'doc-collection-row');
-        const icon = el('span', 'doc-collection-icon');
-        icon.innerHTML = FOLDER;
-        const pageCount = isActive ? pages.length : col.pageCount;
-
-        if (isActive) {
-          // The active collection's name is editable inline.
-          const name = el('input', 'doc-collection-rename');
-          name.value = col.name || '';
-          name.placeholder = 'Collection name';
-          name.addEventListener('input', () => scheduleRename(col.id, name.value));
-          const remove = el('button', 'icon-button doc-collection-del');
-          remove.title = 'Delete collection';
-          remove.setAttribute('aria-label', 'Delete collection');
-          remove.innerHTML = TRASH;
-          remove.addEventListener('click', (e) => {
-            e.stopPropagation();
-            deleteCollection(col.id);
-          });
-          row.append(icon, name, el('span', 'doc-collection-count', String(pageCount)), remove);
-        } else {
-          const open = el('button', 'doc-collection-open');
-          open.append(icon, el('span', 'doc-collection-name', col.name || 'Untitled'));
-          open.append(el('span', 'doc-collection-count', String(pageCount)));
-          open.addEventListener('click', () => selectCollection(col.id));
-          row.append(open);
-        }
-        colEl.append(row);
-
-        if (isActive) {
-          const pagesList = el('div', 'doc-page-list');
-          for (const page of pages) {
-            const item = el('div', 'doc-page-item' + (page.id === current?.id ? ' is-active' : ''));
-            item.dataset.id = page.id;
-
-            const open = el('button', 'doc-page-open');
-            open.append(el('span', 'doc-page-title', page.title || 'Untitled'));
-            open.addEventListener('click', () => {
-              openPage(page.id);
-              if (narrow) layout.classList.add('collapsed');
-            });
-
-            const dl = el('button', 'icon-button doc-page-dl');
-            dl.title = 'Download as Markdown';
-            dl.setAttribute('aria-label', 'Download as Markdown');
-            dl.innerHTML = DOWNLOAD;
-            dl.addEventListener('click', (e) => {
-              e.stopPropagation();
-              downloadPage(page.id);
-            });
-
-            item.append(open, dl);
-            pagesList.append(item);
-          }
-          const addPage = el('button', 'doc-add-page');
-          addPage.innerHTML = `${PLUS}<span>New page</span>`;
-          addPage.addEventListener('click', newPage);
-          pagesList.append(addPage);
-          colEl.append(pagesList);
-        }
-        list.append(colEl);
-      }
+      for (const col of collections) list.append(collectionEl(col));
       sidebar.replaceChildren(head, list);
     }
 
@@ -444,64 +514,59 @@ export default {
         }
       }
       const heading = title && title !== 'Untitled' ? `# ${title}\n\n` : '';
-      const safe = (title || 'page').replace(/[\\/:*?"<>|]+/g, '-').trim() || 'page';
-      const url = URL.createObjectURL(new Blob([heading + content], { type: 'text/markdown' }));
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${safe}.md`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const safe = sanitize(title) || 'page';
+      downloadBlob(new Blob([heading + content], { type: 'text/markdown' }), `${safe}.md`);
+    }
+
+    // Download a whole collection as a .zip containing `collection_name/<page>.md`.
+    async function downloadCollection(colId) {
+      const col = collections.find((c) => c.id === colId);
+      await flushSave();
+      if (!pagesByCol.has(colId)) await loadPages(colId);
+      const pageList = pagesByCol.get(colId) || [];
+      if (!pageList.length) {
+        status.textContent = 'This collection has no pages to download.';
+        return;
+      }
+      const folder = sanitize(col?.name) || 'collection';
+      const used = new Set();
+      const files = [];
+      for (const p of pageList) {
+        const page =
+          current && current.id === p.id
+            ? { title: titleInput.value.trim() || 'Untitled', content: source.value }
+            : await getApi(`pages/${p.id}`);
+        const title = page.title || 'Untitled';
+        const base = sanitize(title) || 'page';
+        let name = base;
+        let i = 2;
+        while (used.has(name.toLowerCase())) name = `${base}-${i++}`;
+        used.add(name.toLowerCase());
+        const heading = title && title !== 'Untitled' ? `# ${title}\n\n` : '';
+        files.push({ name: `${folder}/${name}.md`, data: heading + (page.content || '') });
+      }
+      const { zipStore } = await import('../../lib/zip.js');
+      downloadBlob(zipStore(files), `${folder}.zip`);
     }
 
     // --- data ---
-    async function loadCollections() {
+    async function loadPages(colId) {
       try {
-        collections = (await getApi('collections')).collections || [];
-      } catch (err) {
-        main.replaceChildren(el('p', 'app-error', err.message));
-        return;
+        pagesByCol.set(colId, (await getApi(`collections/${colId}/pages`)).pages || []);
+      } catch {
+        pagesByCol.set(colId, []);
       }
-      // Coming from the home widget.
-      if (pendingNewCollection) {
-        pendingNewCollection = false;
-        await newCollection();
-        return;
-      }
-      if (pendingCollectionId) {
-        const id = pendingCollectionId;
-        pendingCollectionId = null;
-        if (collections.some((c) => c.id === id)) activeColId = id;
-      }
-
-      if (!collections.length) {
-        activeColId = null;
-        pages = [];
-        current = null;
-        drawSidebar();
-        showEmpty();
-        return;
-      }
-      if (!activeColId || !collections.some((c) => c.id === activeColId)) activeColId = collections[0].id;
-      await loadPages();
     }
 
-    async function loadPages() {
-      try {
-        pages = (await getApi(`collections/${activeColId}/pages`)).pages || [];
-      } catch (err) {
-        main.replaceChildren(el('p', 'app-error', err.message));
+    async function toggleExpand(colId) {
+      if (expanded.has(colId)) {
+        expanded.delete(colId);
+        drawSidebar();
         return;
       }
-      if (current && !pages.some((p) => p.id === current.id)) current = null;
+      expanded.add(colId);
+      if (!pagesByCol.has(colId)) await loadPages(colId);
       drawSidebar();
-      if (!pages.length) {
-        current = null;
-        showEmptyPages();
-      } else if (!current) {
-        await openPage(pages[0].id);
-      } else {
-        main.replaceChildren(editor);
-      }
     }
 
     async function openPage(id) {
@@ -512,6 +577,7 @@ export default {
         main.replaceChildren(el('p', 'app-error', err.message));
         return;
       }
+      expanded.add(current.collectionId); // make sure it's visible in the tree
       titleInput.value = current.title === 'Untitled' ? '' : current.title;
       source.value = current.content || '';
       updateCount();
@@ -521,10 +587,14 @@ export default {
       main.replaceChildren(editor);
     }
 
-    async function newPage() {
-      const page = await jsonApi('POST', `collections/${activeColId}/pages`, { title: 'Untitled', content: '' });
+    async function newPage(colId) {
+      const page = await jsonApi('POST', `collections/${colId}/pages`, { title: 'Untitled', content: '' });
+      pagesByCol.set(colId, [
+        { id: page.id, title: page.title, updated: page.updated },
+        ...(pagesByCol.get(colId) || []),
+      ]);
+      expanded.add(colId);
       current = page;
-      pages = [{ id: page.id, title: page.title, updated: page.updated }, ...pages];
       drawSidebar();
       await openPage(page.id);
       requestAnimationFrame(() => titleInput.focus());
@@ -534,14 +604,14 @@ export default {
       await flushSave();
       const col = await jsonApi('POST', 'collections', { name: 'New collection' });
       collections = [{ id: col.id, name: col.name, updated: col.updated, pageCount: 0 }, ...collections];
-      activeColId = col.id;
-      pages = [];
+      pagesByCol.set(col.id, []);
+      expanded.add(col.id);
       current = null;
       drawSidebar();
-      showEmptyPages();
+      showPlaceholder();
       // Focus the name so the user can title it (e.g. the book) straight away.
       requestAnimationFrame(() => {
-        const input = sidebar.querySelector('.doc-collection.is-active .doc-collection-rename');
+        const input = sidebar.querySelector('.doc-collection.is-expanded .doc-collection-rename');
         if (input) {
           input.focus();
           input.select();
@@ -549,21 +619,32 @@ export default {
       });
     }
 
-    async function selectCollection(id) {
-      if (id === activeColId) return;
-      await flushSave();
-      activeColId = id;
-      current = null;
-      await loadPages();
-    }
-
     async function deleteCollection(id) {
+      const col = collections.find((c) => c.id === id);
+      await flushSave();
+      if (!pagesByCol.has(id)) await loadPages(id);
+      // Capture full pages (with content) so the delete can be undone.
+      const snapshot = await Promise.all(
+        (pagesByCol.get(id) || []).map((p) => getApi(`pages/${p.id}`).catch(() => null)),
+      );
       await jsonApi('DELETE', `collections/${id}`);
-      if (activeColId === id) {
-        activeColId = null;
-        current = null;
-      }
-      await loadCollections();
+      collections = collections.filter((c) => c.id !== id);
+      pagesByCol.delete(id);
+      expanded.delete(id);
+      if (current?.collectionId === id) current = null;
+      drawSidebar();
+      if (current) main.replaceChildren(editor);
+      else if (collections.length) showPlaceholder();
+      else showEmpty();
+      showUndo(`Deleted "${col?.name || 'collection'}"`, async () => {
+        const newCol = await jsonApi('POST', 'collections', { name: col?.name || 'Untitled collection' });
+        // Recreate pages oldest-first so their original order is preserved.
+        for (const page of [...snapshot].reverse()) {
+          if (page)
+            await jsonApi('POST', `collections/${newCol.id}/pages`, { title: page.title, content: page.content });
+        }
+        await loadCollections();
+      });
     }
 
     function showEmpty() {
@@ -575,13 +656,40 @@ export default {
       main.replaceChildren(wrap);
     }
 
-    function showEmptyPages() {
+    function showPlaceholder() {
       const wrap = el('div', 'doc-empty');
-      wrap.append(el('p', 'placeholder-lead', 'No pages yet in this collection.'));
-      const create = el('button', 'button-primary', 'New page');
-      create.addEventListener('click', newPage);
-      wrap.append(create);
+      wrap.append(el('p', 'placeholder-lead', 'Open a page from the sidebar, or add one to a collection.'));
       main.replaceChildren(wrap);
+    }
+
+    async function loadCollections() {
+      try {
+        collections = (await getApi('collections')).collections || [];
+      } catch (err) {
+        main.replaceChildren(el('p', 'app-error', err.message));
+        return;
+      }
+      if (pendingNewCollection) {
+        pendingNewCollection = false;
+        await newCollection();
+        return;
+      }
+      if (!collections.length) {
+        drawSidebar();
+        showEmpty();
+        return;
+      }
+      // Open the requested (or most-recent) collection: expand it and open its
+      // first page so the editor isn't empty on first open.
+      let openCol = pendingCollectionId;
+      pendingCollectionId = null;
+      if (!openCol || !collections.some((c) => c.id === openCol)) openCol = collections[0].id;
+      expanded.add(openCol);
+      await loadPages(openCol);
+      drawSidebar();
+      const first = (pagesByCol.get(openCol) || [])[0];
+      if (first) await openPage(first.id);
+      else showPlaceholder();
     }
 
     loadCollections();
