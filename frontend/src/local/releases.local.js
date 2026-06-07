@@ -13,7 +13,8 @@ const CACHE = 'releases:cache';
 
 const normalize = (list) =>
   list
-    .filter((r) => !r.draft)
+    // Only version releases (v1.2.3); skips non-release tags like `models` (asset bundles).
+    .filter((r) => !r.draft && /^v\d/.test(r.tag_name || ''))
     .map((r) => ({
       version: (r.tag_name || '').replace(/^v/, ''),
       name: r.name || r.tag_name || '',
@@ -29,12 +30,17 @@ register('GET', 'releases', async ({ query }) => {
     const res = await fetch(`https://api.github.com/repos/${REPO}/releases`, {
       headers: { Accept: 'application/vnd.github+json' },
     });
-    if (!res.ok) throw new Error(`GitHub ${res.status}`);
+    if (!res.ok) {
+      // 404 usually means the repo is private/renamed; anything else is transient.
+      throw new Error(res.status === 404 ? 'repository not found (is it private?)' : `GitHub returned ${res.status}`);
+    }
     const releases = normalize(await res.json());
     await db.kv.set(CACHE, { at: Date.now(), releases });
     return { releases };
   } catch (err) {
-    if (cache?.releases) return { releases: cache.releases };
-    throw err;
+    const reason = err?.message || 'network error';
+    // Keep showing the cached list if we have one, but flag that it's stale.
+    if (cache?.releases?.length) return { releases: cache.releases, stale: true, error: reason };
+    throw new Error(`Couldn't load release notes — ${reason}.`);
   }
 });

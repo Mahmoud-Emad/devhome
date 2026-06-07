@@ -33,18 +33,24 @@ function head(release, installed) {
 
 const signature = (releases) => releases.map((r) => `${r.version}@${r.date}`).join('|');
 
-function draw(host, releases, installed) {
-  host.replaceChildren(
-    ...releases.map((release) => {
-      const section = document.createElement('section');
-      section.className = 'release';
-      const body = document.createElement('div');
-      body.className = 'release-body';
-      body.innerHTML = marked.parse(release.body || '_No notes for this release._');
-      section.append(head(release, installed), body);
-      return section;
-    }),
-  );
+function noticeBanner(text) {
+  const el = document.createElement('p');
+  el.className = 'release-notice';
+  el.textContent = text;
+  return el;
+}
+
+function draw(host, releases, installed, notice) {
+  const sections = releases.map((release) => {
+    const section = document.createElement('section');
+    section.className = 'release';
+    const body = document.createElement('div');
+    body.className = 'release-body';
+    body.innerHTML = marked.parse(release.body || '_No notes for this release._');
+    section.append(head(release, installed), body);
+    return section;
+  });
+  host.replaceChildren(...(notice ? [noticeBanner(notice), ...sections] : sections));
 }
 
 // Release notes are fetched from GitHub (see local/releases.local.js). We render
@@ -54,11 +60,11 @@ export async function renderReleaseNotes(host) {
   const installed = getVersion();
   let shownSig = null;
 
-  const show = async (releases) => {
-    const sig = signature(releases);
+  const show = async (releases, notice) => {
+    const sig = signature(releases) + (notice ? `|notice:${notice}` : '');
     if (sig === shownSig) return; // unchanged — skip the re-render (no flicker)
     shownSig = sig;
-    await draw(host, releases, installed);
+    draw(host, releases, installed, notice);
   };
 
   // 1. Instant: whatever we cached last time.
@@ -70,12 +76,18 @@ export async function renderReleaseNotes(host) {
   }
   if (!shownSig) host.replaceChildren(note('Loading release notes…'));
 
-  // 2. Always revalidate; update the view if the list changed.
+  // 2. Always revalidate; update the view if the list changed, and tell the user
+  //    if we couldn't reach GitHub (so a stale list isn't mistaken for current).
   try {
-    const { releases } = await getApi('releases');
-    if (releases?.length) await show(releases);
-    else if (!shownSig) host.replaceChildren(note('No releases published yet.'));
-  } catch {
-    if (!shownSig) host.replaceChildren(note('Couldn’t load release notes — check your connection and try again.'));
+    const { releases, stale, error } = await getApi('releases');
+    if (releases?.length) {
+      await show(releases, stale ? `Showing cached notes — couldn’t reach GitHub (${error}).` : null);
+    } else if (!shownSig) {
+      host.replaceChildren(note('No releases published yet.'));
+    }
+  } catch (err) {
+    if (!shownSig) {
+      host.replaceChildren(note(err?.message || 'Couldn’t load release notes — check your connection and try again.'));
+    }
   }
 }

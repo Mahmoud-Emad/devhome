@@ -30,6 +30,9 @@ async function loadPipeline(model, onProgress) {
     // SharedArrayBuffer (and thus ORT threads) isn't available anyway, and this
     // avoids spawning a pthread worker that the MV3 CSP could block.
     env.backends.onnx.wasm.numThreads = 1;
+    // Our wasm is bundled, so there's nothing to cache — and the Cache API rejects
+    // `chrome-extension:` URLs, which spams a "Failed to cache …" warning. Off it goes.
+    env.useWasmCache = false;
   }
   const files = new Map(); // per-file { loaded, total }, summed for overall progress
   const progressCallback = (p) => {

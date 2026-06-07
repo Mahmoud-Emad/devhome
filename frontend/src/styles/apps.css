@@ -1233,6 +1233,17 @@
   color: var(--text-secondary);
 }
 
+/* Shown when GitHub couldn't be reached and we're falling back to cached notes. */
+.release-notice {
+  margin: 0 0 14px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  color: #ffd27d;
+  background: rgba(255, 180, 60, 0.12);
+  border: 1px solid rgba(255, 180, 60, 0.3);
+  border-radius: var(--radius-sm);
+}
+
 /* Secondary button + app flow shared by interactive apps */
 .button-secondary {
   padding: 9px 16px;
