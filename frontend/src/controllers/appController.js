@@ -10,6 +10,7 @@ import { renderDockTip, stopDockTip } from '../views/tips.js';
 import { renderOnboarding } from '../views/onboarding.js';
 import { renderReleaseNotes, VERSION } from '../data/releaseNotes.js';
 import { isInstalled } from '../models/installed.js';
+import { onInstalledChange } from '../lib/installManager.js';
 import { createBackgroundController } from './backgroundController.js';
 import { createSettingsController } from './settingsController.js';
 import { createAppsController } from './appsController.js';
@@ -121,12 +122,11 @@ export async function startApp() {
 
   setupReleaseNotes();
 
-  createAppStoreController({
-    buttonEl: $('store-btn'),
-    onChange: () => {
-      apps_.refresh();
-      refreshHome();
-    },
+  createAppStoreController({ buttonEl: $('store-btn') });
+  // An install/uninstall finishing (in the background) updates the dock + home.
+  onInstalledChange(() => {
+    apps_.refresh();
+    refreshHome();
   });
 
   createSettingsController({

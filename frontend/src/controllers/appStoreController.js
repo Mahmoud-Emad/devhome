@@ -1,15 +1,14 @@
 import { createDialog } from '../components/dialog.js';
 import { renderAppStore } from '../views/appStore.js';
 
-export function createAppStoreController({ buttonEl, onChange }) {
-  const dialog = createDialog({ title: 'App Store', size: 'md', appDialog: false });
+export function createAppStoreController({ buttonEl }) {
+  const dialog = createDialog({ title: 'App Store', size: 'lg', appDialog: false });
   dialog.el.classList.add('store-dialog');
+  // Rendered once; the install manager keeps the rows live (installs continue in
+  // the background while the dialog is closed).
+  renderAppStore(dialog.body);
 
-  function open() {
-    renderAppStore(dialog.body, { onChange });
-    dialog.open();
-  }
-
+  const open = () => dialog.open();
   buttonEl.addEventListener('click', open);
   if (location.hash === '#store') open(); // deep link
   return { open };

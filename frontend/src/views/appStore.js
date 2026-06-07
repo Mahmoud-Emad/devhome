@@ -1,10 +1,12 @@
-// App Store — lists every app and lets the user install / uninstall. Installing
-// an app that has an on-device model downloads it (with a loading button +
-// progress); uninstalling frees it. Apps without a model toggle instantly.
+// App Store — lists every app and lets the user install / uninstall. Installs run
+// through the global install manager, so they continue in the background if the
+// store is closed and show live progress when reopened. Installing an app with an
+// on-device model downloads it; uninstalling frees it. Model-less apps are instant.
 
 import { apps } from '../apps/index.js';
-import { isInstalled, setInstalled } from '../models/installed.js';
+import { isInstalled } from '../models/installed.js';
 import { appModel } from '../lib/appModels.js';
+import { install, uninstall, currentOp, isBusy, opError, onProgress } from '../lib/installManager.js';
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -16,8 +18,9 @@ function el(tag, className, text) {
 const monogram = (name) => name.trim().charAt(0).toUpperCase();
 const pct = (ratio) => `${Math.round((ratio || 0) * 100)}%`;
 
-export function renderAppStore(container, { onChange } = {}) {
+export function renderAppStore(container) {
   const list = el('div', 'store-list');
+  const updaters = [];
 
   function row(app) {
     const model = appModel(app.id);
@@ -31,76 +34,54 @@ export function renderAppStore(container, { onChange } = {}) {
     nameRow.append(el('span', 'store-name', app.name));
     if (app.widget) nameRow.append(el('span', 'store-tag', 'Home widget'));
     if (model) nameRow.append(el('span', 'store-tag', model.size));
-    meta.append(nameRow, el('p', 'store-desc', app.description || ''));
+    const err = el('p', 'store-error');
+    err.hidden = true;
+    meta.append(nameRow, el('p', 'store-desc', app.description || ''), err);
 
     const btn = el('button', 'store-btn-action');
     btn.type = 'button';
-    const err = el('p', 'store-error');
-    err.hidden = true;
-
-    const paint = () => {
-      const installed = isInstalled(app.id);
-      btn.className = `store-btn-action ${installed ? 'button-secondary' : 'button-primary'}`;
-      btn.textContent = installed ? 'Uninstall' : 'Install';
-      btn.disabled = false;
-    };
-
-    btn.addEventListener('click', async () => {
-      const installed = isInstalled(app.id);
-      err.hidden = true;
-
-      // Plain toggle for apps with no downloadable model.
-      if (!model) {
-        await setInstalled(app.id, !installed);
-        onChange?.();
-        draw();
-        return;
-      }
-
-      btn.disabled = true;
-      const spin = (label) => {
-        btn.innerHTML = `<span class="btn-spinner"></span>${label}`;
-      };
-      try {
-        if (!installed) {
-          btn.className = 'store-btn-action button-primary is-loading';
-          spin('');
-          await model.download((p) => spin(p?.ratio != null ? pct(p.ratio) : ''));
-          await setInstalled(app.id, true);
-        } else {
-          btn.className = 'store-btn-action button-secondary is-loading';
-          spin('');
-          await model.remove?.();
-          await setInstalled(app.id, false);
-        }
-        onChange?.();
-        draw();
-      } catch (e) {
-        err.textContent = `Couldn't ${installed ? 'remove' : 'download'} the model: ${e.message || e}`;
-        err.hidden = false;
-        paint();
-      }
+    btn.addEventListener('click', () => {
+      if (isBusy(app.id)) return;
+      if (isInstalled(app.id)) uninstall(app.id);
+      else install(app.id);
     });
 
-    paint();
-    const right = el('div', 'store-actions');
-    right.append(btn);
-    meta.append(err);
-    item.append(tile, meta, right);
+    // Reflect the current state (called on every manager event).
+    function update() {
+      const op = currentOp(app.id);
+      const installed = isInstalled(app.id);
+      const error = opError(app.id);
+      if (op) {
+        btn.disabled = true;
+        btn.className = `store-btn-action ${op.kind === 'install' ? 'button-primary' : 'button-secondary'} is-loading`;
+        btn.innerHTML = `<span class="btn-spinner"></span>${op.kind === 'install' && op.ratio != null ? pct(op.ratio) : ''}`;
+      } else {
+        btn.disabled = false;
+        btn.className = `store-btn-action ${installed ? 'button-secondary' : 'button-primary'}`;
+        btn.textContent = installed ? 'Uninstall' : 'Install';
+      }
+      err.hidden = !error;
+      if (error) err.textContent = `Couldn't ${installed ? 'remove' : 'download'} the model: ${error}`;
+    }
+    updaters.push(update);
+    update();
+
+    const actions = el('div', 'store-actions');
+    actions.append(btn);
+    item.append(tile, meta, actions);
     return item;
   }
 
-  function draw() {
-    list.replaceChildren(...apps.map(row));
-  }
-
+  list.replaceChildren(...apps.map(row));
   container.replaceChildren(
     el(
       'p',
       'store-intro',
-      'Install the tools you want — they appear in the dock. On-device tools (voice, audio) download their model when you install them and free it when you uninstall.',
+      'Install the tools you want — they appear in the dock. On-device tools (voice, audio) download their model when you install them and free it when you uninstall. Installs keep running in the background.',
     ),
     list,
   );
-  draw();
+
+  // Live-update the buttons as installs progress (rendered once, subscribed once).
+  onProgress(() => updaters.forEach((u) => u()));
 }
