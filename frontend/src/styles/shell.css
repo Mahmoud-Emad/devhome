@@ -299,6 +299,60 @@
 }
 
 /* Reusable dialog component */
+/* Reusable right-click context menu */
+.context-menu {
+  position: fixed;
+  z-index: 9000;
+  min-width: 180px;
+  padding: 5px;
+  background: rgba(30, 30, 34, 0.98);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+}
+
+.context-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  color: var(--text);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.context-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.context-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  color: var(--text-secondary);
+}
+
+.context-item.is-danger {
+  color: #ff8f8f;
+}
+
+.context-item.is-danger .context-icon {
+  color: #ff8f8f;
+}
+
+.context-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--hairline);
+}
+
 /* Shared confirmation dialog — sits above app windows. */
 .confirm-overlay {
   position: fixed;

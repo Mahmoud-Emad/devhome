@@ -24,6 +24,7 @@ import java from 'highlight.js/lib/languages/java';
 import 'highlight.js/styles/github-dark.css';
 import { getApi, jsonApi } from '../../lib/api.js';
 import { confirmDialog } from '../../components/confirm.js';
+import { openContextMenu } from '../../components/contextMenu.js';
 
 for (const [name, lang] of Object.entries({
   javascript,
@@ -342,8 +343,8 @@ export default {
     const setTitleText = () => {
       titleText.textContent = current && current.title !== 'Untitled' ? current.title : 'Untitled';
     };
-    titleText.addEventListener('click', renamePage);
-    titleEdit.addEventListener('click', renamePage);
+    titleText.addEventListener('click', () => renamePage());
+    titleEdit.addEventListener('click', () => renamePage());
 
     const area = el('div', 'doc-editor-area');
     const source = el('textarea', 'doc-source');
@@ -434,28 +435,45 @@ export default {
       return null;
     }
 
-    async function openInternalLink({ collectionSlug, pageSlug }, baseColId) {
+    // Resolve an internal link to { col, page }, loading the target collection's
+    // pages if needed. Works across collections.
+    async function resolveInternalLink({ collectionSlug, pageSlug }, baseColId) {
       const col =
         collectionSlug == null
           ? collections.find((c) => c.id === (baseColId ?? current?.collectionId))
           : collections.find((c) => slug(c.name) === collectionSlug);
       if (!col) {
         status.textContent = 'Linked collection not found.';
-        return;
+        return null;
       }
       if (!pagesByCol.has(col.id)) await loadPages(col.id);
       const page = (pagesByCol.get(col.id) || []).find((p) => slug(p.title) === pageSlug);
       if (!page) {
         status.textContent = 'Linked page not found.';
-        return;
+        return null;
       }
-      expanded.add(col.id);
-      await openPage(page.id);
+      return { col, page };
     }
 
-    // Wire up links in rendered markdown: internal page links navigate in-app;
-    // everything else opens in a new tab (schemeless → https).
-    function enhanceLinks(container, baseColId) {
+    // From the editor preview: open the linked page in the editor.
+    async function openInternalLink(internal, baseColId) {
+      const found = await resolveInternalLink(internal, baseColId);
+      if (!found) return;
+      expanded.add(found.col.id);
+      await openPage(found.page.id);
+    }
+
+    // From book view: stay in reading mode — open the target collection's book
+    // (even another collection) and scroll to the linked page.
+    async function openInternalLinkInBook(internal, baseColId) {
+      const found = await resolveInternalLink(internal, baseColId);
+      if (!found) return;
+      await openBookView(found.col.id, found.page.id);
+    }
+
+    // Wire up links in rendered markdown: internal page links navigate in-app
+    // (via `onInternal`); everything else opens in a new tab (schemeless → https).
+    function enhanceLinks(container, baseColId, onInternal) {
       container.querySelectorAll('a').forEach((a) => {
         const href = a.getAttribute('href') || '';
         const internal = parseInternalLink(href);
@@ -464,7 +482,7 @@ export default {
           a.removeAttribute('target');
           a.addEventListener('click', (e) => {
             e.preventDefault();
-            openInternalLink(internal, baseColId);
+            (onInternal || openInternalLink)(internal, baseColId);
           });
           return;
         }
@@ -500,7 +518,7 @@ export default {
     }
 
     // "Export as Book": read the whole collection as one continuous, rendered doc.
-    async function openBookView(colId) {
+    async function openBookView(colId, focusPageId) {
       await flushSave();
       const col = collections.find((c) => c.id === colId);
       if (!pagesByCol.has(colId)) await loadPages(colId);
@@ -520,14 +538,20 @@ export default {
       const content = el('div', 'doc-book-content md-preview');
       for (const page of ordered) {
         const section = el('section', 'doc-book-page');
+        section.dataset.id = page.id;
         section.innerHTML = marked.parse(`# ${page.title || 'Untitled'}\n\n${page.content || ''}`);
-        enhanceLinks(section, colId);
+        // Internal links navigate within the book (stay in reading mode).
+        enhanceLinks(section, colId, openInternalLinkInBook);
         content.append(section);
       }
       if (!ordered.length) content.append(el('p', 'placeholder-lead', 'This collection has no pages yet.'));
 
       book.append(bar, content);
       main.replaceChildren(book);
+      if (focusPageId) {
+        const target = content.querySelector(`.doc-book-page[data-id="${focusPageId}"]`);
+        if (target) requestAnimationFrame(() => target.scrollIntoView({ block: 'start' }));
+      }
     }
 
     function exitBookView() {
@@ -559,27 +583,69 @@ export default {
       }
     }
 
-    // Rename the open page via the dialog, then sync the editor + sidebar.
-    async function renamePage() {
-      if (!current) return;
-      const name = await promptTitle('Page title', current.title === 'Untitled' ? '' : current.title);
+    // Rename a page via the dialog (defaults to the open page), then sync the
+    // editor (if it's open) + the sidebar.
+    async function renamePage(page = current, colId = current?.collectionId) {
+      if (!page) return;
+      const name = await promptTitle('Page title', page.title === 'Untitled' ? '' : page.title);
       if (name == null) return;
-      await flushSave();
+      if (current?.id === page.id) await flushSave();
+      let updated;
       try {
-        const updated = await jsonApi('PATCH', `pages/${current.id}`, { title: name || 'Untitled' });
-        current = { ...current, ...updated };
+        updated = await jsonApi('PATCH', `pages/${page.id}`, { title: name || 'Untitled' });
       } catch (err) {
         status.textContent = err.message;
         return;
       }
-      setTitleText();
-      const entry = pagesByCol.get(current.collectionId)?.find((p) => p.id === current.id);
+      const entry = (pagesByCol.get(colId) || []).find((p) => p.id === page.id);
       if (entry) {
-        entry.title = current.title;
-        entry.updated = current.updated;
+        entry.title = updated.title;
+        entry.updated = updated.updated;
       }
-      const item = sidebar.querySelector(`.doc-page-item[data-id="${current.id}"] .doc-page-title`);
-      if (item) item.textContent = current.title || 'Untitled';
+      if (current?.id === page.id) {
+        current = { ...current, ...updated };
+        setTitleText();
+      }
+      const item = sidebar.querySelector(`.doc-page-item[data-id="${page.id}"] .doc-page-title`);
+      if (item) item.textContent = updated.title || 'Untitled';
+    }
+
+    // Delete a page (defaults to the open page) with confirm + 30s undo.
+    async function deletePage(pageInfo = current, colId = current?.collectionId) {
+      if (!pageInfo) return;
+      if (!(await confirmDialog('Delete this page?'))) return;
+      const isCurrent = current?.id === pageInfo.id;
+      let snapshot;
+      if (isCurrent) {
+        snapshot = { title: current.title, content: source.value };
+      } else {
+        try {
+          const full = await getApi(`pages/${pageInfo.id}`);
+          snapshot = { title: full.title, content: full.content || '' };
+        } catch {
+          snapshot = { title: pageInfo.title, content: '' };
+        }
+      }
+      await jsonApi('DELETE', `pages/${pageInfo.id}`);
+      const remaining = (pagesByCol.get(colId) || []).filter((p) => p.id !== pageInfo.id);
+      pagesByCol.set(colId, remaining);
+      if (isCurrent) {
+        current = null;
+        drawSidebar();
+        if (remaining.length) await openPage(remaining[0].id);
+        else showPlaceholder();
+      } else {
+        drawSidebar();
+      }
+      showUndo('Page deleted', async () => {
+        const restored = await jsonApi('POST', `collections/${colId}/pages`, snapshot);
+        pagesByCol.set(colId, [
+          { id: restored.id, title: restored.title, updated: restored.updated },
+          ...(pagesByCol.get(colId) || []),
+        ]);
+        expanded.add(colId);
+        await openPage(restored.id);
+      });
     }
 
     // Persist any pending (debounced) edit immediately — e.g. before switching
@@ -598,51 +664,31 @@ export default {
       scheduleSave();
     });
 
-    del.addEventListener('click', async () => {
-      if (!current) return;
-      if (!(await confirmDialog('Delete this page?'))) return;
-      const colId = current.collectionId;
-      const snapshot = { title: current.title, content: source.value };
-      await jsonApi('DELETE', `pages/${current.id}`);
-      const remaining = (pagesByCol.get(colId) || []).filter((p) => p.id !== current.id);
-      pagesByCol.set(colId, remaining);
-      current = null;
-      drawSidebar();
-      if (remaining.length) await openPage(remaining[0].id);
-      else showPlaceholder();
-      showUndo('Page deleted', async () => {
-        const restored = await jsonApi('POST', `collections/${colId}/pages`, snapshot);
-        pagesByCol.set(colId, [
-          { id: restored.id, title: restored.title, updated: restored.updated },
-          ...(pagesByCol.get(colId) || []),
-        ]);
-        expanded.add(colId);
-        await openPage(restored.id);
-      });
-    });
+    del.addEventListener('click', () => deletePage());
 
     // --- sidebar (a tree of collections → pages) ---
-    function pageRow(page) {
+    function pageRow(page, colId) {
       const item = el('div', 'doc-page-item' + (page.id === current?.id ? ' is-active' : ''));
       item.dataset.id = page.id;
 
       const open = el('button', 'doc-page-open');
+      open.title = 'Click to open · right-click for options';
       open.append(el('span', 'doc-page-title', page.title || 'Untitled'));
       open.addEventListener('click', () => {
         openPage(page.id);
         if (narrow) layout.classList.add('collapsed');
       });
+      item.append(open);
 
-      const dl = el('button', 'icon-button doc-page-dl');
-      dl.title = 'Download as Markdown';
-      dl.setAttribute('aria-label', 'Download as Markdown');
-      dl.innerHTML = DOWNLOAD;
-      dl.addEventListener('click', (e) => {
-        e.stopPropagation();
-        downloadPage(page.id);
+      item.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        openContextMenu(e.clientX, e.clientY, [
+          { label: 'Rename', icon: PENCIL, onClick: () => renamePage(page, colId) },
+          { label: 'Download (.md)', icon: DOWNLOAD, onClick: () => downloadPage(page.id) },
+          { separator: true },
+          { label: 'Delete', icon: TRASH, danger: true, onClick: () => deletePage(page, colId) },
+        ]);
       });
-
-      item.append(open, dl);
       return item;
     }
 
@@ -656,8 +702,9 @@ export default {
       icon.innerHTML = FOLDER;
       const pageCount = pagesByCol.get(col.id)?.length ?? col.pageCount;
 
-      // Clicking the collection itself expands / collapses it.
+      // Clicking the collection expands / collapses it; right-click for actions.
       const open = el('button', 'doc-collection-open');
+      open.title = 'Click to open · right-click for options';
       open.append(
         icon,
         el('span', 'doc-collection-name', col.name || 'Untitled'),
@@ -666,48 +713,22 @@ export default {
       open.addEventListener('click', () => toggleExpand(col.id));
       row.append(open);
 
-      if (isOpen) {
-        const actions = el('div', 'doc-collection-actions');
-        const book = el('button', 'icon-button doc-collection-book');
-        book.title = 'Export as Book';
-        book.setAttribute('aria-label', 'Export as Book');
-        book.innerHTML = BOOK;
-        book.addEventListener('click', (e) => {
-          e.stopPropagation();
-          openBookView(col.id);
-        });
-        const edit = el('button', 'icon-button doc-collection-edit');
-        edit.title = 'Rename collection';
-        edit.setAttribute('aria-label', 'Rename collection');
-        edit.innerHTML = PENCIL;
-        edit.addEventListener('click', (e) => {
-          e.stopPropagation();
-          renameCollection(col);
-        });
-        const dlCol = el('button', 'icon-button doc-collection-dl');
-        dlCol.title = 'Download collection (.zip)';
-        dlCol.setAttribute('aria-label', 'Download collection');
-        dlCol.innerHTML = DOWNLOAD;
-        dlCol.addEventListener('click', (e) => {
-          e.stopPropagation();
-          downloadCollection(col.id);
-        });
-        const remove = el('button', 'icon-button doc-collection-del');
-        remove.title = 'Delete collection';
-        remove.setAttribute('aria-label', 'Delete collection');
-        remove.innerHTML = TRASH;
-        remove.addEventListener('click', (e) => {
-          e.stopPropagation();
-          deleteCollection(col.id);
-        });
-        actions.append(book, edit, dlCol, remove);
-        row.append(actions);
-      }
+      row.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        openContextMenu(e.clientX, e.clientY, [
+          { label: 'Export as Book', icon: BOOK, onClick: () => openBookView(col.id) },
+          { label: 'Rename', icon: PENCIL, onClick: () => renameCollection(col) },
+          { label: 'Download (.zip)', icon: DOWNLOAD, onClick: () => downloadCollection(col.id) },
+          { separator: true },
+          { label: 'Delete', icon: TRASH, danger: true, onClick: () => deleteCollection(col.id) },
+        ]);
+      });
+
       colEl.append(row);
 
       if (isOpen) {
         const pagesList = el('div', 'doc-page-list');
-        for (const page of pagesByCol.get(col.id) || []) pagesList.append(pageRow(page));
+        for (const page of pagesByCol.get(col.id) || []) pagesList.append(pageRow(page, col.id));
         const addPage = el('button', 'doc-add-page');
         addPage.innerHTML = `${PLUS}<span>New page</span>`;
         addPage.addEventListener('click', () => newPage(col.id));
