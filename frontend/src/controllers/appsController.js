@@ -18,6 +18,9 @@ export function createAppsController({ dockEl, onAfterClose }) {
         accent: app.accent,
         onClose: () => {
           entry.rendered = false;
+          // An app's render() may return a teardown fn (observers, timers, …).
+          if (typeof entry.cleanup === 'function') entry.cleanup();
+          entry.cleanup = null;
           dock.setOpen(app.id, false);
           onAfterClose?.();
         },
@@ -26,7 +29,7 @@ export function createAppsController({ dockEl, onAfterClose }) {
       windows.set(app.id, entry);
     }
     if (!entry.rendered) {
-      app.render(entry.win.body, { close: entry.win.close });
+      entry.cleanup = app.render(entry.win.body, { close: entry.win.close });
       entry.rendered = true;
     }
     entry.win.open();

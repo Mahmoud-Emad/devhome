@@ -11,7 +11,7 @@ export const DEFAULT_APPS = ['todaytodo', 'doccoon', 'pdflib', 'calculator'];
 
 // null in the store means "never chosen" → fall back to the defaults. An empty
 // array is a real state (user uninstalled everything), so we keep them distinct.
-export function installedIds() {
+function installedIds() {
   return store.get('installedApps') || DEFAULT_APPS;
 }
 

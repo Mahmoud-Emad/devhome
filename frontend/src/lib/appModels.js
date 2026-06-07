@@ -2,7 +2,7 @@
 // uninstalling frees it. Apps not listed here have no model — install/uninstall
 // is instant (their assets are bundled, e.g. OCR, or they need nothing).
 
-export const APP_MODELS = {
+const APP_MODELS = {
   televoica: {
     size: '~145 MB',
     download: async (onProgress) => {

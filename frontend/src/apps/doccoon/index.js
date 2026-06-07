@@ -563,12 +563,17 @@ export default {
 
     async function save() {
       if (!current) return;
+      saveTimer = null; // this save is now in flight; don't let flushSave double-fire
+      const page = current; // pin the page being saved (it may change during the await)
       try {
-        const updated = await jsonApi('PATCH', `pages/${current.id}`, { content: source.value });
-        current = { ...current, ...updated };
-        const entry = pagesByCol.get(current.collectionId)?.find((p) => p.id === current.id);
-        if (entry) entry.updated = current.updated;
-        status.textContent = 'Saved';
+        const updated = await jsonApi('PATCH', `pages/${page.id}`, { content: source.value });
+        // Only write back if we're still on the same page (the user may have switched).
+        if (current === page) {
+          current = { ...current, ...updated };
+          status.textContent = 'Saved';
+        }
+        const entry = pagesByCol.get(page.collectionId)?.find((p) => p.id === page.id);
+        if (entry) entry.updated = updated.updated;
       } catch (err) {
         status.textContent = err.message;
       }
@@ -947,5 +952,14 @@ export default {
     }
 
     loadCollections();
+
+    // Teardown when the window closes: stop the observer and any pending timers
+    // so they don't fire against a detached editor on the next open.
+    return () => {
+      ro.disconnect();
+      clearTimeout(saveTimer);
+      clearTimeout(previewTimer);
+      clearTimeout(undoTimer);
+    };
   },
 };

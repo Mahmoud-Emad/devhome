@@ -14,8 +14,15 @@ const guardSize = (content) => {
 
 const touchCollection = (id) => db.patch('collections', id, { updated: Date.now() });
 
-// One-time migration: the old flat `notes` become pages in a "My Notes" collection.
-async function migrate() {
+// One-time migration: the old flat `notes` become pages in a "My Notes"
+// collection. Guarded by a single in-flight promise so concurrent handler calls
+// on first load can't migrate twice.
+let migrating = null;
+function migrate() {
+  if (!migrating) migrating = doMigrate();
+  return migrating;
+}
+async function doMigrate() {
   if (await db.kv.get('doccoon:migrated')) return;
   const legacy = await db.list('notes');
   if (legacy.length) {

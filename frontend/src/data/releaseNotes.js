@@ -4,7 +4,7 @@ import { getApi } from '../lib/api.js';
 // The version actually running (from the extension manifest), so the pill and the
 // About panel always reflect what's installed. Falls back to a literal during
 // `vite dev`, where there's no extension manifest.
-export function getVersion() {
+function getVersion() {
   try {
     return chrome.runtime.getManifest().version;
   } catch {

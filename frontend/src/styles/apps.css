@@ -2177,16 +2177,7 @@
   color: #ff8f8f;
 }
 
-.doc-delete {
-  width: 32px;
-  height: 32px;
-}
-
-.doc-delete:hover {
-  color: #ff8f8f;
-}
-
-/* Page title — display-only; the pencil (or clicking it) opens a rename dialog. */
+/* Page title — display only (rename/delete live in the page's right-click menu). */
 .doc-title-bar {
   display: flex;
   align-items: center;

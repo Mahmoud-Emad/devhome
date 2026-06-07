@@ -3,7 +3,7 @@
 
 import { store } from '../models/store.js';
 
-export function appDefaults(app) {
+function appDefaults(app) {
   const defaults = {};
   for (const field of app.settings || []) defaults[field.key] = field.default;
   return defaults;

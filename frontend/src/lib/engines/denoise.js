@@ -124,15 +124,6 @@ export async function prefetchDenoiseModel(onProgress) {
   await fetchModelBytes(onProgress);
 }
 
-// Whether the model is already downloaded (cached).
-export async function isDenoiseModelCached() {
-  try {
-    return !!(await (await caches.open(MODEL_CACHE)).match(MODEL_URL));
-  } catch {
-    return false;
-  }
-}
-
 // Free the cached model (uninstall).
 export async function removeDenoiseModel() {
   try {
