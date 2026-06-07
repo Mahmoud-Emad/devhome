@@ -101,6 +101,27 @@ const PENCIL = `
     <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path>
   </svg>`;
 
+const INFO = `
+  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+    stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="9"></circle>
+    <path d="M12 16v-5"></path>
+    <path d="M12 8h.01"></path>
+  </svg>`;
+
+const BOOK = `
+  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+    stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M4 5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2z"></path>
+    <path d="M4 19a2 2 0 0 1 2-2h12"></path>
+  </svg>`;
+
+const BACK = `
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M15 6l-6 6 6 6"></path>
+  </svg>`;
+
 // Below this layout width the sidebar collapses to an overlay and the editor
 // drops the split preview (no room for two panes).
 const NARROW = 640;
@@ -111,6 +132,13 @@ function el(tag, className, text) {
   if (text != null) node.textContent = text;
   return node;
 }
+
+// Normalize a title/name for internal links: lowercase, spaces & dashes → "_".
+const slug = (s) =>
+  (s || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
 
 // Set by the home widget so the next open jumps to a collection / starts a new one.
 let pendingCollectionId = null;
@@ -287,14 +315,20 @@ export default {
     const viewToggle = el('div', 'tabs doc-view-toggle');
     const editTab = el('button', 'tab', 'Edit');
     const splitTab = el('button', 'tab', 'Split');
-    viewToggle.append(editTab, splitTab);
+    const previewTab = el('button', 'tab', 'Preview');
+    viewToggle.append(editTab, splitTab, previewTab);
+    const info = el('button', 'icon-button doc-info');
+    info.innerHTML = INFO;
+    info.title = 'Internal linking help';
+    info.setAttribute('aria-label', 'Internal linking help');
+    info.addEventListener('click', showLinkHelp);
     const status = el('span', 'doc-status');
     const count = el('span', 'doc-count');
     const del = el('button', 'icon-button doc-delete');
     del.title = 'Delete page';
     del.setAttribute('aria-label', 'Delete page');
     del.innerHTML = TRASH;
-    toolbar.append(burger, viewToggle, status, count, del);
+    toolbar.append(burger, viewToggle, info, status, count, del);
 
     // Page title: display-only; rename via a small dialog (no in-place editing).
     const titleBar = el('div', 'doc-title-bar');
@@ -332,6 +366,7 @@ export default {
       editor.dataset.view = view;
       editTab.classList.toggle('is-active', view === 'edit');
       splitTab.classList.toggle('is-active', view === 'split');
+      previewTab.classList.toggle('is-active', view === 'preview');
     }
     editTab.addEventListener('click', () => {
       userView = 'edit';
@@ -340,6 +375,11 @@ export default {
     splitTab.addEventListener('click', () => {
       userView = 'split';
       setView('split');
+      renderPreview();
+    });
+    previewTab.addEventListener('click', () => {
+      userView = 'preview';
+      setView('preview');
       renderPreview();
     });
     setView(view);
@@ -376,19 +416,124 @@ export default {
 
     let previewTimer = null;
     const renderPreview = () => {
-      if (view !== 'split') return; // preview is hidden in edit mode — don't parse
+      if (view === 'edit') return; // preview hidden in edit mode — don't parse
       preview.innerHTML = marked.parse(source.value || '*Nothing to preview yet.*');
-      preview.querySelectorAll('a').forEach((a) => {
+      enhanceLinks(preview, current?.collectionId);
+    };
+
+    // Detect an internal page link: `this:page` (same collection) or
+    // `collection:page` (another collection). Returns null for real URLs.
+    function parseInternalLink(href) {
+      const m = href.match(/^([^:/?#]+):(.+)$/);
+      if (!m) return null;
+      const [, prefix, rest] = m;
+      if (rest.startsWith('//')) return null; // https://, etc.
+      if (prefix === 'this') return { collectionSlug: null, pageSlug: slug(rest) };
+      const cslug = slug(prefix);
+      if (collections.some((c) => slug(c.name) === cslug)) return { collectionSlug: cslug, pageSlug: slug(rest) };
+      return null;
+    }
+
+    async function openInternalLink({ collectionSlug, pageSlug }, baseColId) {
+      const col =
+        collectionSlug == null
+          ? collections.find((c) => c.id === (baseColId ?? current?.collectionId))
+          : collections.find((c) => slug(c.name) === collectionSlug);
+      if (!col) {
+        status.textContent = 'Linked collection not found.';
+        return;
+      }
+      if (!pagesByCol.has(col.id)) await loadPages(col.id);
+      const page = (pagesByCol.get(col.id) || []).find((p) => slug(p.title) === pageSlug);
+      if (!page) {
+        status.textContent = 'Linked page not found.';
+        return;
+      }
+      expanded.add(col.id);
+      await openPage(page.id);
+    }
+
+    // Wire up links in rendered markdown: internal page links navigate in-app;
+    // everything else opens in a new tab (schemeless → https).
+    function enhanceLinks(container, baseColId) {
+      container.querySelectorAll('a').forEach((a) => {
         const href = a.getAttribute('href') || '';
-        // A bare domain like "google.com" has no scheme, so the browser treats
-        // it as relative. Send schemeless links to https:// instead.
+        const internal = parseInternalLink(href);
+        if (internal) {
+          a.classList.add('doc-link');
+          a.removeAttribute('target');
+          a.addEventListener('click', (e) => {
+            e.preventDefault();
+            openInternalLink(internal, baseColId);
+          });
+          return;
+        }
         if (href && !/^([a-z][a-z0-9+.-]*:|\/\/|#|\/)/i.test(href)) {
           a.setAttribute('href', `https://${href}`);
         }
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
       });
-    };
+    }
+
+    // Help popover explaining the internal-link syntax.
+    function showLinkHelp() {
+      const overlay = el('div', 'doc-prompt-overlay');
+      const card = el('div', 'doc-prompt doc-help');
+      card.innerHTML =
+        '<p class="doc-prompt-label">Internal links</p>' +
+        '<p>Link to another page with a Markdown link:</p>' +
+        '<ul><li>Same collection: <code>[text](this:page_name)</code></li>' +
+        '<li>Another collection: <code>[text](collection_name:page_name)</code></li></ul>' +
+        '<p>Names are normalized — spaces and dashes become <code>_</code> and case is ignored, so “Page Title” → <code>page_title</code>.</p>';
+      const actions = el('div', 'doc-prompt-actions');
+      const close = el('button', 'button-primary', 'Got it');
+      actions.append(close);
+      card.append(actions);
+      overlay.append(card);
+      layout.append(overlay);
+      const done = () => overlay.remove();
+      close.addEventListener('click', done);
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) done();
+      });
+    }
+
+    // "Export as Book": read the whole collection as one continuous, rendered doc.
+    async function openBookView(colId) {
+      await flushSave();
+      const col = collections.find((c) => c.id === colId);
+      if (!pagesByCol.has(colId)) await loadPages(colId);
+      const list = pagesByCol.get(colId) || [];
+      const fulls = (await Promise.all(list.map((p) => getApi(`pages/${p.id}`).catch(() => null)))).filter(Boolean);
+      const ordered = fulls.reverse(); // pages are newest-first; read oldest-first
+
+      const book = el('div', 'doc-book');
+      const bar = el('div', 'doc-book-bar');
+      const back = el('button', 'icon-button');
+      back.innerHTML = BACK;
+      back.title = 'Back to editor';
+      back.setAttribute('aria-label', 'Back to editor');
+      back.addEventListener('click', exitBookView);
+      bar.append(back, el('span', 'doc-book-title', col?.name || 'Book'));
+
+      const content = el('div', 'doc-book-content md-preview');
+      for (const page of ordered) {
+        const section = el('section', 'doc-book-page');
+        section.innerHTML = marked.parse(`# ${page.title || 'Untitled'}\n\n${page.content || ''}`);
+        enhanceLinks(section, colId);
+        content.append(section);
+      }
+      if (!ordered.length) content.append(el('p', 'placeholder-lead', 'This collection has no pages yet.'));
+
+      book.append(bar, content);
+      main.replaceChildren(book);
+    }
+
+    function exitBookView() {
+      if (current) main.replaceChildren(editor);
+      else showPlaceholder();
+    }
     // Debounced so we don't re-parse + re-highlight the whole page on every keystroke.
     const schedulePreview = () => {
       clearTimeout(previewTimer);
@@ -523,6 +668,14 @@ export default {
 
       if (isOpen) {
         const actions = el('div', 'doc-collection-actions');
+        const book = el('button', 'icon-button doc-collection-book');
+        book.title = 'Export as Book';
+        book.setAttribute('aria-label', 'Export as Book');
+        book.innerHTML = BOOK;
+        book.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openBookView(col.id);
+        });
         const edit = el('button', 'icon-button doc-collection-edit');
         edit.title = 'Rename collection';
         edit.setAttribute('aria-label', 'Rename collection');
@@ -547,7 +700,7 @@ export default {
           e.stopPropagation();
           deleteCollection(col.id);
         });
-        actions.append(edit, dlCol, remove);
+        actions.append(book, edit, dlCol, remove);
         row.append(actions);
       }
       colEl.append(row);
