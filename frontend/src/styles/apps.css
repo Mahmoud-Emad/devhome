@@ -2324,10 +2324,8 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  max-width: 820px;
   width: 100%;
-  margin: 0 auto;
-  padding: 8px 8px 40px;
+  padding: 8px 4px 40px;
 }
 
 .doc-book-page + .doc-book-page {
