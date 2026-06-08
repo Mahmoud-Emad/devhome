@@ -17,6 +17,7 @@
 
 import { createProgressBar } from '../components/progressBar.js';
 import { createResultView } from '../components/resultView.js';
+import { createAudioPlayer } from '../components/audioPlayer.js';
 import { getAppConfig } from './appConfig.js';
 import { dataStore as db } from './dataStore.js';
 
@@ -82,7 +83,8 @@ export function createMediaTextApp(config) {
     return entry;
   };
 
-  // A player for the saved media (audio control, or an image), or null.
+  // A player for the saved media: a themed audio player, or an image preview.
+  // Returns { el, destroy } or null.
   async function mediaEl(entry) {
     if (!entry?.blobKey) return null;
     const url = await db.blobUrl(entry.blobKey);
@@ -91,12 +93,9 @@ export function createMediaTextApp(config) {
       const img = el('img', 'mt-media-img');
       img.src = url;
       img.alt = entry.name || 'Input image';
-      return img;
+      return { el: img, destroy: () => {} };
     }
-    const audio = el('audio', 'mt-media-audio');
-    audio.controls = true;
-    audio.src = url;
-    return audio;
+    return createAudioPlayer(url);
   }
 
   return {
@@ -106,6 +105,12 @@ export function createMediaTextApp(config) {
       let sidebarEl = null;
       let mainEl;
       let activeId = null;
+      let activeMedia = null; // the audio player currently shown, so we can stop it
+
+      const stopMedia = () => {
+        activeMedia?.destroy?.();
+        activeMedia = null;
+      };
 
       if (historyEnabled) {
         const layout = el('div', 'mt-layout');
@@ -161,6 +166,7 @@ export function createMediaTextApp(config) {
       }
 
       const showInput = (error) => {
+        stopMedia();
         activeId = null;
         const input = createInput();
         const action = el('button', 'button-primary', actionLabel);
@@ -178,6 +184,7 @@ export function createMediaTextApp(config) {
       };
 
       const execute = async (input) => {
+        stopMedia();
         input.stop?.();
         const data = input.getData();
         const cfg = getAppConfig(config);
@@ -200,6 +207,7 @@ export function createMediaTextApp(config) {
       };
 
       const showResult = async (entry) => {
+        stopMedia();
         activeId = entry.id ?? null;
         const view = createResultView({
           label: resultLabel,
@@ -210,9 +218,10 @@ export function createMediaTextApp(config) {
         });
         const media = await mediaEl(entry);
         if (media) {
+          activeMedia = media;
           const wrap = el('div', 'mt-result');
           const box = el('div', 'mt-media');
-          box.append(media);
+          box.append(media.el);
           wrap.append(box, view.el);
           mainEl.replaceChildren(wrap);
         } else {
@@ -222,6 +231,9 @@ export function createMediaTextApp(config) {
       };
 
       showInput();
+
+      // Stop any playing audio when the window is closed (appsController hook).
+      return () => stopMedia();
     },
   };
 }

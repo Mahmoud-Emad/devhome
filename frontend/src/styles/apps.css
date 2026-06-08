@@ -1433,13 +1433,78 @@
   gap: 16px;
 }
 
-.mt-media-audio {
-  width: 100%;
-}
-
 .mt-media-img {
   max-width: 100%;
   border-radius: var(--radius-sm);
+}
+
+/* Themed audio player (replaces the native <audio controls>). */
+.audio-player {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+}
+
+.audio-play {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.audio-play:hover {
+  filter: brightness(1.1);
+}
+
+.audio-track {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.audio-fill {
+  position: relative;
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  border-radius: 3px;
+}
+
+/* Knob at the playhead. */
+.audio-fill::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -1px;
+  transform: translate(50%, -50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.audio-time {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
 }
 
 /* Audio input — dropzone, record, clip card */
