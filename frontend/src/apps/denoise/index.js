@@ -4,6 +4,7 @@
 
 import { createAudioInput } from '../../components/audioInput.js';
 import { createProgressBar } from '../../components/progressBar.js';
+import { createAudioPlayer } from '../../components/audioPlayer.js';
 
 const ACCENT = '#22d3ee';
 
@@ -14,14 +15,12 @@ function el(tag, className, text) {
   return node;
 }
 
-function audioBlock(title, blob) {
+function audioBlock(title, url) {
   const wrap = el('div', 'denoise-track');
   wrap.append(el('span', 'denoise-track-label', title));
-  const player = el('audio', 'audio-player');
-  player.controls = true;
-  player.src = URL.createObjectURL(blob);
-  wrap.append(player);
-  return { wrap, url: player.src };
+  const player = createAudioPlayer(url);
+  wrap.append(player.el);
+  return { wrap, player };
 }
 
 const app = {
@@ -56,8 +55,11 @@ const app = {
 
     const stage = el('div', 'denoise-stage');
     let urls = []; // object URLs to revoke when we re-render the stage
+    let players = []; // active players to stop/teardown when we re-render
 
     const clearStage = () => {
+      players.forEach((p) => p.destroy());
+      players = [];
       urls.forEach((u) => URL.revokeObjectURL(u));
       urls = [];
       stage.replaceChildren();
@@ -86,13 +88,17 @@ const app = {
         const { denoiseAudio } = await import('../../lib/engines/denoise.js');
         const cleaned = await denoiseAudio(blob, { onProgress: (p) => bar.update(p) });
 
+        const cleanUrl = URL.createObjectURL(cleaned);
+        const origUrl = URL.createObjectURL(blob);
+        urls = [cleanUrl, origUrl];
+
         const result = el('div', 'denoise-result');
-        const clean = audioBlock('Cleaned', cleaned);
-        const orig = audioBlock('Original', blob);
-        urls = [clean.url, orig.url];
+        const clean = audioBlock('Cleaned', cleanUrl);
+        const orig = audioBlock('Original', origUrl);
+        players = [clean.player, orig.player];
 
         const dl = el('a', 'button-primary', 'Download cleaned WAV');
-        dl.href = clean.url;
+        dl.href = cleanUrl;
         dl.download = 'denoised.wav';
 
         result.append(clean.wrap, orig.wrap, dl);
@@ -103,6 +109,12 @@ const app = {
         runBtn.disabled = !input.getBlob();
       }
     });
+
+    // Stop playback + free object URLs when the window closes (appsController hook).
+    return () => {
+      input.stop?.();
+      clearStage();
+    };
   },
 };
 
