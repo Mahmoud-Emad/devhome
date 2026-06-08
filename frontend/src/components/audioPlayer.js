@@ -8,6 +8,7 @@
 // src), then cheaply downsampled to the number of bars that fit. Resizing only
 // re-buckets that small array — no re-decode, no re-scan of the samples.
 
+import { el } from '../lib/dom.js';
 const PLAY = `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>`;
 const PAUSE = `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg>`;
 
@@ -17,13 +18,6 @@ const BASE_RES = 1024; // peaks computed once at this resolution, then downsampl
 
 // Decoded peaks keyed by src, so reopening a clip never decodes twice.
 const peakCache = new Map();
-
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text != null) node.textContent = text;
-  return node;
-}
 
 const fmt = (s) => {
   if (!isFinite(s) || s < 0) s = 0;

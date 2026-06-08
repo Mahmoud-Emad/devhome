@@ -2,13 +2,7 @@
 // auto-dismisses after `duration` ms. Only one is shown at a time.
 // Returns a function that closes the toast early.
 
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text != null) node.textContent = text;
-  return node;
-}
-
+import { el } from '../lib/dom.js';
 export function showUndoToast(message, { onUndo, duration = 5000 } = {}) {
   document.querySelector('.undo-toast')?.remove();
 

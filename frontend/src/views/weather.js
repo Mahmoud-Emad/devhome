@@ -4,6 +4,7 @@
 
 import { store } from '../models/store.js';
 import { getApi } from '../lib/api.js';
+import { el } from '../lib/dom.js';
 
 const ACCENT = '#60a5fa';
 
@@ -20,13 +21,6 @@ const ICONS = {
   storm:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 15a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.6 1.6A3.5 3.5 0 0 0 6.5 15"></path><path d="M13 12l-3 4h4l-3 4"></path></svg>',
 };
-
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text != null) node.textContent = text;
-  return node;
-}
 
 function iconFor(d) {
   const svg = d.group === 'clear' && !d.isDay ? ICONS.moon : ICONS[d.group] || ICONS.cloud;

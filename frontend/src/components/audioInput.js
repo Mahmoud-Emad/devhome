@@ -3,32 +3,8 @@
 // can reuse this; it just holds the current clip and fires `change`.
 
 import { createAudioPlayer } from './audioPlayer.js';
-
-const MIC = `
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
-    stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <rect x="9" y="2" width="6" height="12" rx="3"></rect>
-    <path d="M5 11a7 7 0 0 0 14 0"></path>
-    <line x1="12" y1="18" x2="12" y2="22"></line>
-  </svg>`;
-
-const UPLOAD = `
-  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
-    stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M12 16V4"></path><path d="M7 9l5-5 5 5"></path>
-    <path d="M5 20h14"></path>
-  </svg>`;
-
-function formatSize(bytes) {
-  if (!bytes) return '';
-  const kb = bytes / 1024;
-  return kb < 1024 ? `${Math.round(kb)} KB` : `${(kb / 1024).toFixed(1)} MB`;
-}
-
-function formatTime(ms) {
-  const total = Math.floor(ms / 1000);
-  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
-}
+import { MIC, UPLOAD } from './icons.js';
+import { formatSize, formatTime } from '../lib/format.js';
 
 const AUDIO_EXTS = ['mp3', 'ogg', 'oga', 'wav', 'm4a', 'aac', 'flac', 'opus', 'weba'];
 

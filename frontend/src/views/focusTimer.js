@@ -2,6 +2,7 @@
 // a running timer continues across new tabs (remaining is derived from endsAt).
 
 import { store } from '../models/store.js';
+import { el } from '../lib/dom.js';
 
 const ACCENT = '#f472b6';
 const PRESETS = [
@@ -11,13 +12,6 @@ const PRESETS = [
 ];
 
 let tick = null;
-
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text != null) node.textContent = text;
-  return node;
-}
 
 const fmt = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
 

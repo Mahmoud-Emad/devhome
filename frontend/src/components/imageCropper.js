@@ -2,13 +2,7 @@
 // zooms an image inside a fixed-aspect frame, then returns the cropped region
 // as a Blob. Used to frame custom wallpapers to the screen before uploading.
 
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text != null) node.textContent = text;
-  return node;
-}
-
+import { el } from '../lib/dom.js';
 export function openImageCropper(file, { aspect = 16 / 9, title = 'Adjust wallpaper', maxWidth = 2560 } = {}) {
   return new Promise((resolve) => {
     const overlay = el('div', 'cropper-overlay');

@@ -4,14 +4,8 @@
 
 import { getApi, jsonApi, callApi } from '../../lib/api.js';
 import { confirmDialog } from '../../components/confirm.js';
-
-const TRASH = `
-  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
-    stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M3 6h18"></path>
-    <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path>
-    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-  </svg>`;
+import { el } from '../../lib/dom.js';
+import { TRASH } from '../../components/icons.js';
 
 const DOC = `
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
@@ -20,13 +14,6 @@ const DOC = `
     <path d="M14 3v5h5"></path>
     <path d="M9 13h6M9 17h4"></path>
   </svg>`;
-
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text != null) node.textContent = text;
-  return node;
-}
 
 function host(url) {
   try {

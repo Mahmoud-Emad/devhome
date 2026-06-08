@@ -2,14 +2,8 @@
 // UI, no persistence: the running total lives in a small state machine below.
 // Keyboard: digits, + - * /, Enter or = to evaluate, Backspace, Esc/c to clear.
 
+import { el } from '../../lib/dom.js';
 const ACCENT = '#2dd4bf';
-
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text != null) node.textContent = text;
-  return node;
-}
 
 const SYMBOL = { '+': '+', '-': '−', '*': '×', '/': '÷' };
 

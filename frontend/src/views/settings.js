@@ -3,19 +3,13 @@ import { apps } from '../apps/index.js';
 import { getAppConfig, setAppConfig } from '../lib/appConfig.js';
 import { dataStore } from '../lib/dataStore.js';
 import { confirmDialog } from '../components/confirm.js';
+import { el } from '../lib/dom.js';
 
 const ENGINES = [
   { value: 'google', label: 'Google' },
   { value: 'duckduckgo', label: 'DuckDuckGo' },
   { value: 'devdocs', label: 'DevDocs' },
 ];
-
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text != null) node.textContent = text;
-  return node;
-}
 
 const starSvg = (filled) => `
   <svg viewBox="0 0 24 24" width="16" height="16" fill="${filled ? 'currentColor' : 'none'}"

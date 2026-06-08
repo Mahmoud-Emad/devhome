@@ -1,14 +1,8 @@
 // Reusable image input: upload, drag-and-drop, or paste an image, with a
 // preview. Holds the current image and fires `change`. Mirrors audioInput.
 
-const UPLOAD = `
-  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
-    stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M12 16V4"></path><path d="M7 9l5-5 5 5"></path>
-    <path d="M5 20h14"></path>
-  </svg>`;
-
 import { createImagePanel } from './imagePanel.js';
+import { UPLOAD } from './icons.js';
 
 const IMAGE_EXTS = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'heic', 'heif'];
 

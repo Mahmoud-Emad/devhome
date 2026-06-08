@@ -1,13 +1,7 @@
 // Reusable confirmation dialog. Resolves true (confirmed) or false (cancelled).
 // Enter confirms, Escape / backdrop-click cancels.
 
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text != null) node.textContent = text;
-  return node;
-}
-
+import { el } from '../lib/dom.js';
 export function confirmDialog(message, { confirmLabel = 'Delete', danger = true } = {}) {
   return new Promise((resolve) => {
     const overlay = el('div', 'confirm-overlay');

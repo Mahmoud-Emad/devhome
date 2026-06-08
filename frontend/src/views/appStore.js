@@ -8,13 +8,7 @@ import { isInstalled } from '../models/installed.js';
 import { appModel } from '../lib/appModels.js';
 import { install, uninstall, currentOp, isBusy, opError, onProgress } from '../lib/installManager.js';
 import { confirmDialog } from '../components/confirm.js';
-
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text != null) node.textContent = text;
-  return node;
-}
+import { el } from '../lib/dom.js';
 
 const monogram = (name) => name.trim().charAt(0).toUpperCase();
 const pct = (ratio) => `${Math.round((ratio || 0) * 100)}%`;

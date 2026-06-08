@@ -25,6 +25,8 @@ import 'highlight.js/styles/github-dark.css';
 import { getApi, jsonApi } from '../../lib/api.js';
 import { confirmDialog } from '../../components/confirm.js';
 import { openContextMenu } from '../../components/contextMenu.js';
+import { el } from '../../lib/dom.js';
+import { TRASH, PLUS, BURGER, DOWNLOAD, FOLDER, PENCIL, INFO, BOOK, BACK } from '../../components/icons.js';
 
 for (const [name, lang] of Object.entries({
   javascript,
@@ -61,78 +63,9 @@ marked.setOptions({ gfm: true, breaks: true });
 // Cap page size so rendering/highlighting stays fast.
 const MAX_CHARS = 50000;
 
-const TRASH = `
-  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
-    stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M3 6h18"></path>
-    <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path>
-    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-  </svg>`;
-
-const PLUS = `
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
-    stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-    <path d="M12 5v14M5 12h14"></path>
-  </svg>`;
-
-const BURGER = `
-  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
-    stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-    <path d="M4 7h16M4 12h16M4 17h16"></path>
-  </svg>`;
-
-const DOWNLOAD = `
-  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
-    stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-    <path d="M7 10l5 5 5-5"></path>
-    <path d="M12 15V3"></path>
-  </svg>`;
-
-const FOLDER = `
-  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
-    stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-  </svg>`;
-
-const PENCIL = `
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-    stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M12 20h9"></path>
-    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path>
-  </svg>`;
-
-const INFO = `
-  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
-    stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <circle cx="12" cy="12" r="9"></circle>
-    <path d="M12 16v-5"></path>
-    <path d="M12 8h.01"></path>
-  </svg>`;
-
-const BOOK = `
-  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
-    stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M4 5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2z"></path>
-    <path d="M4 19a2 2 0 0 1 2-2h12"></path>
-  </svg>`;
-
-const BACK = `
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
-    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M15 6l-6 6 6 6"></path>
-  </svg>`;
-
 // Below this layout width the sidebar collapses to an overlay and the editor
 // drops the split preview (no room for two panes).
 const NARROW = 640;
-
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text != null) node.textContent = text;
-  return node;
-}
 
 // Normalize a title/name for internal links: lowercase, spaces & dashes → "_".
 const slug = (s) =>

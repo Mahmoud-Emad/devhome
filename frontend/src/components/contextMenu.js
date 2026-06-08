@@ -2,14 +2,8 @@
 // items: [{ label, icon?, danger?, onClick }] or { separator: true }.
 // Closes on outside-click, Escape, scroll/resize, or selecting an item.
 
+import { el } from '../lib/dom.js';
 let close = null; // closes the currently-open menu, if any
-
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text != null) node.textContent = text;
-  return node;
-}
 
 export function closeContextMenu() {
   if (close) close();

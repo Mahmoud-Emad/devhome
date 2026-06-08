@@ -10,41 +10,15 @@ import { confirmDialog } from '../../components/confirm.js';
 import { openContextMenu } from '../../components/contextMenu.js';
 import { showUndoToast } from '../../components/undoToast.js';
 import { dataStore as db } from '../../lib/dataStore.js';
+import { el } from '../../lib/dom.js';
+import { formatWhen } from '../../lib/format.js';
+import { TRASH, DOWNLOAD, OPEN } from '../../components/icons.js';
 
 const ACCENT = '#22d3ee';
 const HISTORY = 'history:denoise';
 const HISTORY_LIMIT = 30;
 const UNDO_MS = 5000;
 let sidebarWidth = 220; // drag-resizable; persists across opens within the session.
-
-const TRASH = `
-  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
-    stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M3 6h18"></path><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path>
-    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-  </svg>`;
-const OPEN = `
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-    stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M15 3h6v6"></path><path d="M10 14L21 3"></path>
-    <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path>
-  </svg>`;
-const DOWNLOAD = `
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-    stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-    <path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path>
-  </svg>`;
-
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text != null) node.textContent = text;
-  return node;
-}
-
-const formatWhen = (at) =>
-  new Date(at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 const baseName = (name) => (name || 'denoised').replace(/\.[^.]+$/, '') || 'denoised';
 

@@ -6,13 +6,7 @@
 import { store } from '../models/store.js';
 import { DEFAULT_APPS } from '../models/installed.js';
 import { createProgressBar } from '../components/progressBar.js';
-
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text != null) node.textContent = text;
-  return node;
-}
+import { el } from '../lib/dom.js';
 
 // Opt-in tools and how to warm their model.
 const OPTIONAL = [

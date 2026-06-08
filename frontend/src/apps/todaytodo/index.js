@@ -4,29 +4,10 @@
 
 import { getApi, jsonApi } from '../../lib/api.js';
 import { confirmDialog } from '../../components/confirm.js';
+import { el } from '../../lib/dom.js';
+import { TRASH, BURGER, PENCIL } from '../../components/icons.js';
 
 const ACCENT = '#fb923c';
-
-const PENCIL = `
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-    stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M12 20h9"></path>
-    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path>
-  </svg>`;
-
-const TRASH = `
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-    stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M3 6h18"></path>
-    <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path>
-    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-  </svg>`;
-
-const BURGER = `
-  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
-    stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-    <path d="M4 7h16M4 12h16M4 17h16"></path>
-  </svg>`;
 
 // Below this layout width the day sidebar collapses to a hamburger-toggled overlay.
 const NARROW = 560;
@@ -58,13 +39,6 @@ function labelFor(key) {
 function fullDate(key) {
   const d = parseKey(key);
   return `${WEEKDAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`;
-}
-
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text != null) node.textContent = text;
-  return node;
 }
 
 function iconButton(svg, label, onClick) {

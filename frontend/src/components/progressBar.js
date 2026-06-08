@@ -3,13 +3,7 @@
 // phase with byte counts shows "Downloading model — 23.4 / 80.1 MB (29%)" and
 // reveals the "one-time / offline" hint; anything else shows the label.
 
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text != null) node.textContent = text;
-  return node;
-}
-
+import { el } from '../lib/dom.js';
 const mb = (bytes) => `${((bytes || 0) / (1024 * 1024)).toFixed(1)} MB`;
 const pct = (ratio) => `${Math.round((ratio || 0) * 100)}%`;
 

@@ -4,6 +4,7 @@
 
 import { getApi } from '../lib/api.js';
 import { createSpinner } from '../components/spinner.js';
+import { el } from '../lib/dom.js';
 
 const ACCENT = '#34d399';
 
@@ -15,13 +16,6 @@ const REFRESH = `
     <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
     <path d="M3 21v-5h5"></path>
   </svg>`;
-
-function el(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text != null) node.textContent = text;
-  return node;
-}
 
 export function renderReadit(host) {
   const card = () => {
