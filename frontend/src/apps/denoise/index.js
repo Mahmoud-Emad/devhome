@@ -9,6 +9,7 @@ import { createAudioPlayer } from '../../components/audioPlayer.js';
 import { confirmDialog } from '../../components/confirm.js';
 import { openContextMenu } from '../../components/contextMenu.js';
 import { showUndoToast } from '../../components/undoToast.js';
+import { createResizer } from '../../components/resizer.js';
 import { dataStore as db } from '../../lib/dataStore.js';
 import { el } from '../../lib/dom.js';
 import { formatWhen } from '../../lib/format.js';
@@ -61,32 +62,18 @@ const app = {
     const layout = el('div', 'mt-layout');
     const sidebarEl = el('aside', 'mt-sidebar');
     sidebarEl.style.width = `${sidebarWidth}px`;
-    const resizer = el('div', 'mt-resizer');
+    // Drag the divider to resize the sidebar (min 200px), kept for the session.
+    const resizer = createResizer({
+      layout,
+      pane: sidebarEl,
+      reserve: 320,
+      onResize: (w) => {
+        sidebarWidth = w;
+      },
+    });
     const main = el('div', 'app-flow mt-main');
     layout.append(sidebarEl, resizer, main);
     body.replaceChildren(layout);
-
-    // Drag the divider to resize the sidebar (min 200px), kept for the session.
-    resizer.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      const startX = e.clientX;
-      const startW = sidebarEl.offsetWidth;
-      resizer.setPointerCapture(e.pointerId);
-      layout.classList.add('is-resizing');
-      const move = (ev) => {
-        const max = Math.max(200, layout.clientWidth - 320);
-        sidebarWidth = Math.min(max, Math.max(200, startW + (ev.clientX - startX)));
-        sidebarEl.style.width = `${sidebarWidth}px`;
-      };
-      const up = () => {
-        resizer.releasePointerCapture(e.pointerId);
-        layout.classList.remove('is-resizing');
-        resizer.removeEventListener('pointermove', move);
-        resizer.removeEventListener('pointerup', up);
-      };
-      resizer.addEventListener('pointermove', move);
-      resizer.addEventListener('pointerup', up);
-    });
 
     async function drawSidebar() {
       const head = el('div', 'mt-sidebar-head');

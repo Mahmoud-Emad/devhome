@@ -21,6 +21,7 @@ import { createAudioPlayer } from '../components/audioPlayer.js';
 import { confirmDialog } from '../components/confirm.js';
 import { openContextMenu } from '../components/contextMenu.js';
 import { showUndoToast } from '../components/undoToast.js';
+import { createResizer } from '../components/resizer.js';
 import { getAppConfig } from './appConfig.js';
 import { dataStore as db } from './dataStore.js';
 import { el } from './dom.js';
@@ -114,32 +115,18 @@ export function createMediaTextApp(config) {
         const layout = el('div', 'mt-layout');
         sidebarEl = el('aside', 'mt-sidebar');
         sidebarEl.style.width = `${sidebarWidth}px`;
-        const resizer = el('div', 'mt-resizer');
+        // Drag the divider to resize the sidebar (min 200px), kept for the session.
+        const resizer = createResizer({
+          layout,
+          pane: sidebarEl,
+          reserve: 300,
+          onResize: (w) => {
+            sidebarWidth = w;
+          },
+        });
         mainEl = el('div', 'app-flow mt-main');
         layout.append(sidebarEl, resizer, mainEl);
         body.replaceChildren(layout);
-
-        // Drag the divider to resize the sidebar (min 200px), kept for the session.
-        resizer.addEventListener('pointerdown', (e) => {
-          e.preventDefault();
-          const startX = e.clientX;
-          const startW = sidebarEl.offsetWidth;
-          resizer.setPointerCapture(e.pointerId);
-          layout.classList.add('is-resizing');
-          const move = (ev) => {
-            const max = Math.max(200, layout.clientWidth - 300);
-            sidebarWidth = Math.min(max, Math.max(200, startW + (ev.clientX - startX)));
-            sidebarEl.style.width = `${sidebarWidth}px`;
-          };
-          const up = () => {
-            resizer.releasePointerCapture(e.pointerId);
-            layout.classList.remove('is-resizing');
-            resizer.removeEventListener('pointermove', move);
-            resizer.removeEventListener('pointerup', up);
-          };
-          resizer.addEventListener('pointermove', move);
-          resizer.addEventListener('pointerup', up);
-        });
       } else {
         mainEl = el('div', 'app-flow');
         body.replaceChildren(mainEl);

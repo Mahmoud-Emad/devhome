@@ -25,6 +25,7 @@ import 'highlight.js/styles/github-dark.css';
 import { getApi, jsonApi } from '../../lib/api.js';
 import { confirmDialog } from '../../components/confirm.js';
 import { openContextMenu } from '../../components/contextMenu.js';
+import { createResizer } from '../../components/resizer.js';
 import { el } from '../../lib/dom.js';
 import { TRASH, PLUS, BURGER, DOWNLOAD, FOLDER, PENCIL, INFO, BOOK, BACK } from '../../components/icons.js';
 
@@ -146,35 +147,21 @@ export default {
     const layout = el('div', 'doc-layout');
     const sidebar = el('aside', 'doc-sidebar');
     sidebar.style.width = `${sidebarWidth}px`;
-    const resizer = el('div', 'doc-resizer');
+    // Drag the divider to resize the sidebar (min 200px); disabled in narrow overlay mode.
+    const resizer = createResizer({
+      layout,
+      pane: sidebar,
+      reserve: 360,
+      enabled: () => !narrow,
+      onResize: (w) => {
+        sidebarWidth = w;
+      },
+    });
     const main = el('div', 'doc-main');
     layout.append(sidebar, resizer, main);
     body.replaceChildren(layout);
 
     const toggleSidebar = () => layout.classList.toggle('collapsed');
-
-    // Drag the divider to resize the sidebar (min 200px), kept for the session.
-    resizer.addEventListener('pointerdown', (e) => {
-      if (narrow) return;
-      e.preventDefault();
-      const startX = e.clientX;
-      const startW = sidebar.offsetWidth;
-      resizer.setPointerCapture(e.pointerId);
-      layout.classList.add('is-resizing');
-      const move = (ev) => {
-        const max = Math.max(200, layout.clientWidth - 360); // leave room for the editor
-        sidebarWidth = Math.min(max, Math.max(200, startW + (ev.clientX - startX)));
-        sidebar.style.width = `${sidebarWidth}px`;
-      };
-      const up = () => {
-        resizer.releasePointerCapture(e.pointerId);
-        layout.classList.remove('is-resizing');
-        resizer.removeEventListener('pointermove', move);
-        resizer.removeEventListener('pointerup', up);
-      };
-      resizer.addEventListener('pointermove', move);
-      resizer.addEventListener('pointerup', up);
-    });
 
     // Undo toast for deletes (stays for 30s).
     const undoBar = el('div', 'doc-undo');

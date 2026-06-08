@@ -1316,14 +1316,15 @@
 }
 
 /* Draggable divider between the history sidebar and the main pane. */
-.mt-resizer {
+/* Shared draggable sidebar divider (see components/resizer.js). */
+.pane-resizer {
   flex: 0 0 12px;
   align-self: stretch;
   position: relative;
   cursor: col-resize;
 }
 
-.mt-resizer::after {
+.pane-resizer::after {
   content: '';
   position: absolute;
   top: 0;
@@ -1335,12 +1336,12 @@
   transition: background 0.15s ease;
 }
 
-.mt-resizer:hover::after,
-.mt-layout.is-resizing .mt-resizer::after {
+.pane-resizer:hover::after,
+.is-resizing .pane-resizer::after {
   background: var(--accent);
 }
 
-.mt-layout.is-resizing {
+.is-resizing {
   cursor: col-resize;
   user-select: none;
 }
@@ -2040,7 +2041,7 @@
 /* Sidebar hidden by the hamburger toggle, or while reading a book. */
 .doc-layout.collapsed .doc-sidebar,
 .doc-layout.is-reading .doc-sidebar,
-.doc-layout.is-reading .doc-resizer {
+.doc-layout.is-reading .pane-resizer {
   display: none;
 }
 
@@ -2073,39 +2074,10 @@
   overflow: hidden;
 }
 
-/* Draggable divider between the sidebar and the editor. */
-.doc-resizer {
-  flex: 0 0 12px;
-  align-self: stretch;
-  cursor: col-resize;
-  position: relative;
-}
-
-.doc-resizer::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 5px;
-  width: 2px;
-  border-radius: 2px;
-  background: transparent;
-  transition: background 0.15s ease;
-}
-
-.doc-resizer:hover::after,
-.doc-layout.is-resizing .doc-resizer::after {
-  background: var(--accent);
-}
-
-.doc-layout.is-resizing {
-  cursor: col-resize;
-  user-select: none;
-}
-
-/* In the narrow overlay mode the sidebar floats; no resizing. */
-.doc-layout.is-narrow .doc-resizer,
-.doc-layout.collapsed .doc-resizer {
+/* In the narrow overlay mode the sidebar floats; no resizing. (Base divider
+   styles are shared in .pane-resizer.) */
+.doc-layout.is-narrow .pane-resizer,
+.doc-layout.collapsed .pane-resizer {
   display: none;
 }
 
