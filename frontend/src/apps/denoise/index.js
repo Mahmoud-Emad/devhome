@@ -6,19 +6,15 @@
 import { createAudioInput } from '../../components/audioInput.js';
 import { createProgressBar } from '../../components/progressBar.js';
 import { createAudioPlayer } from '../../components/audioPlayer.js';
-import { confirmDialog } from '../../components/confirm.js';
-import { openContextMenu } from '../../components/contextMenu.js';
-import { showUndoToast } from '../../components/undoToast.js';
 import { createResizer } from '../../components/resizer.js';
+import { createHistorySidebar } from '../../components/historySidebar.js';
 import { dataStore as db } from '../../lib/dataStore.js';
 import { el } from '../../lib/dom.js';
-import { formatWhen } from '../../lib/format.js';
-import { TRASH, DOWNLOAD, OPEN } from '../../components/icons.js';
+import { DOWNLOAD, OPEN } from '../../components/icons.js';
 
 const ACCENT = '#22d3ee';
 const HISTORY = 'history:denoise';
 const HISTORY_LIMIT = 30;
-const UNDO_MS = 5000;
 let sidebarWidth = 220; // drag-resizable; persists across opens within the session.
 
 const baseName = (name) => (name || 'denoised').replace(/\.[^.]+$/, '') || 'denoised';
@@ -50,72 +46,14 @@ const app = {
   dialog: { size: 'lg' },
 
   render(body) {
-    let activeId = null;
+    let main;
+    let history;
     let players = []; // audio players currently shown, so we can stop them
-    const pendingDelete = new Set(); // ids hidden during their undo window
 
     const stopPlayers = () => {
       players.forEach((p) => p.destroy());
       players = [];
     };
-
-    const layout = el('div', 'mt-layout');
-    const sidebarEl = el('aside', 'mt-sidebar');
-    sidebarEl.style.width = `${sidebarWidth}px`;
-    // Drag the divider to resize the sidebar (min 200px), kept for the session.
-    const resizer = createResizer({
-      layout,
-      pane: sidebarEl,
-      reserve: 320,
-      onResize: (w) => {
-        sidebarWidth = w;
-      },
-    });
-    const main = el('div', 'app-flow mt-main');
-    layout.append(sidebarEl, resizer, main);
-    body.replaceChildren(layout);
-
-    async function drawSidebar() {
-      const head = el('div', 'mt-sidebar-head');
-      const newBtn = el('button', 'icon-button mt-new', '+');
-      newBtn.title = 'New';
-      newBtn.setAttribute('aria-label', 'New');
-      newBtn.addEventListener('click', () => showInput());
-      head.append(el('span', 'mt-sidebar-title', 'History'), newBtn);
-
-      const list = el('div', 'mt-history-list');
-      let entries = [];
-      try {
-        entries = await loadHistory();
-      } catch {
-        /* ignore */
-      }
-      const visible = entries.filter((e) => !pendingDelete.has(e.id));
-      if (!visible.length) {
-        list.append(el('p', 'mt-history-empty', 'Cleaned clips will appear here.'));
-      }
-      for (const entry of visible) {
-        const item = el('div', 'mt-history-item' + (entry.id === activeId ? ' is-active' : ''));
-        const open = el('button', 'mt-history-open');
-        open.append(
-          el('span', 'mt-history-snippet', entry.name || 'Audio'),
-          el('span', 'mt-history-date', formatWhen(entry.at)),
-        );
-        open.addEventListener('click', () => showResult(entry));
-        item.append(open);
-        item.addEventListener('contextmenu', (ev) => {
-          ev.preventDefault();
-          openContextMenu(ev.clientX, ev.clientY, [
-            { label: 'Open', icon: OPEN, onClick: () => showResult(entry) },
-            { label: 'Download cleaned', icon: DOWNLOAD, onClick: () => downloadClean(entry) },
-            { separator: true },
-            { label: 'Delete', icon: TRASH, danger: true, onClick: () => deleteEntry(entry) },
-          ]);
-        });
-        list.append(item);
-      }
-      sidebarEl.replaceChildren(head, list);
-    }
 
     const downloadClean = async (entry) => {
       const url = await db.blobUrl(entry.cleanKey);
@@ -126,31 +64,8 @@ const app = {
       a.click();
     };
 
-    const deleteEntry = async (entry) => {
-      if (!(await confirmDialog('Delete this clip?'))) return;
-      pendingDelete.add(entry.id);
-      if (activeId === entry.id) showInput();
-      else drawSidebar();
-
-      let undone = false;
-      showUndoToast('Clip deleted', {
-        duration: UNDO_MS,
-        onUndo: () => {
-          undone = true;
-          pendingDelete.delete(entry.id);
-          drawSidebar();
-        },
-      });
-      setTimeout(async () => {
-        if (undone || !pendingDelete.has(entry.id)) return;
-        pendingDelete.delete(entry.id);
-        await removeEntry(entry);
-      }, UNDO_MS);
-    };
-
     const showInput = () => {
       stopPlayers();
-      activeId = null;
       const intro = el(
         'p',
         'placeholder-lead',
@@ -172,9 +87,7 @@ const app = {
       });
       runBtn.addEventListener('click', () => execute(input));
       actions.append(runBtn);
-
       main.replaceChildren(intro, note, input.el, actions);
-      drawSidebar();
     };
 
     const execute = async (input) => {
@@ -190,17 +103,14 @@ const app = {
       try {
         const { denoiseAudio } = await import('../../lib/engines/denoise.js');
         const cleaned = await denoiseAudio(blob, { onProgress: (p) => bar.update(p) });
-        const entry = await saveEntry(input.getFilename?.() || 'recording.webm', blob, cleaned);
-        showResult(entry);
+        history.open(await saveEntry(input.getFilename?.() || 'recording.webm', blob, cleaned));
       } catch (err) {
         main.replaceChildren(el('p', 'app-error', `Couldn't process the audio: ${err.message || err}`));
-        drawSidebar();
       }
     };
 
     const showResult = async (entry) => {
       stopPlayers();
-      activeId = entry.id ?? null;
       const cleanUrl = await db.blobUrl(entry.cleanKey);
       const origUrl = await db.blobUrl(entry.origKey);
 
@@ -223,10 +133,37 @@ const app = {
       }
       result.append(track('Cleaned', cleanUrl), track('Original', origUrl), dl);
       main.replaceChildren(result);
-      drawSidebar();
     };
 
-    showInput();
+    const layout = el('div', 'mt-layout');
+    history = createHistorySidebar({
+      emptyText: 'Cleaned clips will appear here.',
+      load: loadHistory,
+      remove: removeEntry,
+      itemOf: (entry) => ({ snippet: entry.name || 'Audio' }),
+      menu: (entry) => [
+        { label: 'Open', icon: OPEN, onClick: () => history.open(entry) },
+        { label: 'Download cleaned', icon: DOWNLOAD, onClick: () => downloadClean(entry) },
+      ],
+      onOpen: showResult,
+      onNew: showInput,
+      confirmMessage: 'Delete this clip?',
+      undoMessage: 'Clip deleted',
+    });
+    const sidebarEl = history.el;
+    sidebarEl.style.width = `${sidebarWidth}px`;
+    const resizer = createResizer({
+      layout,
+      pane: sidebarEl,
+      reserve: 320,
+      onResize: (w) => {
+        sidebarWidth = w;
+      },
+    });
+    main = el('div', 'app-flow mt-main');
+    layout.append(sidebarEl, resizer, main);
+    body.replaceChildren(layout);
+    history.showNew();
 
     // Stop playback when the window closes (appsController hook).
     return () => stopPlayers();
