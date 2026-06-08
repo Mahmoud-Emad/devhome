@@ -5,7 +5,7 @@
 import { getApi, jsonApi } from '../../lib/api.js';
 import { confirmDialog } from '../../components/confirm.js';
 import { el } from '../../lib/dom.js';
-import { TRASH, BURGER, PENCIL } from '../../components/icons.js';
+import { TRASH, BURGER, PENCIL, iconButton } from '../../components/icons.js';
 
 const ACCENT = '#fb923c';
 
@@ -39,15 +39,6 @@ function labelFor(key) {
 function fullDate(key) {
   const d = parseKey(key);
   return `${WEEKDAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`;
-}
-
-function iconButton(svg, label, onClick) {
-  const b = el('button', 'icon-button todo-action');
-  b.title = label;
-  b.setAttribute('aria-label', label);
-  b.innerHTML = svg;
-  b.addEventListener('click', onClick);
-  return b;
 }
 
 export default {
@@ -196,11 +187,7 @@ export default {
 
     function drawMain(todos) {
       const header = el('div', 'todo-header');
-      const burger = el('button', 'icon-button todo-burger');
-      burger.title = 'Toggle days';
-      burger.setAttribute('aria-label', 'Toggle days');
-      burger.innerHTML = BURGER;
-      burger.addEventListener('click', toggleSidebar);
+      const burger = iconButton(BURGER, { title: 'Toggle days', onClick: toggleSidebar, className: 'todo-burger' });
       const heading = el('div', 'todo-heading');
       heading.append(el('h3', 'todo-title', labelFor(selected)), el('p', 'todo-subtitle', fullDate(selected)));
       const left = todos.filter((t) => !t.done).length;
@@ -238,11 +225,15 @@ export default {
 
       const actions = el('div', 'todo-row-actions');
       actions.append(
-        iconButton(PENCIL, 'Edit', () => beginEdit(row, todo)),
-        iconButton(TRASH, 'Delete', async () => {
-          if (!(await confirmDialog('Delete this task?'))) return;
-          await jsonApi('DELETE', `todos/${todo.id}`);
-          refresh();
+        iconButton(PENCIL, { title: 'Edit', className: 'todo-action', onClick: () => beginEdit(row, todo) }),
+        iconButton(TRASH, {
+          title: 'Delete',
+          className: 'todo-action',
+          onClick: async () => {
+            if (!(await confirmDialog('Delete this task?'))) return;
+            await jsonApi('DELETE', `todos/${todo.id}`);
+            refresh();
+          },
         }),
       );
 

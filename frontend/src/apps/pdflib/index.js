@@ -5,7 +5,7 @@
 import { getApi, jsonApi, callApi } from '../../lib/api.js';
 import { confirmDialog } from '../../components/confirm.js';
 import { el } from '../../lib/dom.js';
-import { TRASH } from '../../components/icons.js';
+import { TRASH, iconButton } from '../../components/icons.js';
 
 const DOC = `
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
@@ -268,14 +268,14 @@ const app = {
         load();
       });
 
-      const remove = el('button', 'icon-button pdf-action');
-      remove.title = 'Remove';
-      remove.setAttribute('aria-label', 'Remove');
-      remove.innerHTML = TRASH;
-      remove.addEventListener('click', async () => {
-        if (!(await confirmDialog(`Remove “${book.title}” from your library?`))) return;
-        await jsonApi('DELETE', `books/${book.id}`);
-        load();
+      const remove = iconButton(TRASH, {
+        title: 'Remove',
+        className: 'pdf-action',
+        onClick: async () => {
+          if (!(await confirmDialog(`Remove “${book.title}” from your library?`))) return;
+          await jsonApi('DELETE', `books/${book.id}`);
+          load();
+        },
       });
       actions.append(check, remove);
 

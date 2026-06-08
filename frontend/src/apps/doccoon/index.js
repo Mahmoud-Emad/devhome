@@ -27,7 +27,7 @@ import { confirmDialog } from '../../components/confirm.js';
 import { openContextMenu } from '../../components/contextMenu.js';
 import { createResizer } from '../../components/resizer.js';
 import { el } from '../../lib/dom.js';
-import { TRASH, PLUS, BURGER, DOWNLOAD, FOLDER, PENCIL, INFO, BOOK, BACK } from '../../components/icons.js';
+import { TRASH, PLUS, BURGER, DOWNLOAD, FOLDER, PENCIL, INFO, BOOK, BACK, iconButton } from '../../components/icons.js';
 
 for (const [name, lang] of Object.entries({
   javascript,
@@ -233,21 +233,13 @@ export default {
     editor.dataset.view = view;
 
     const toolbar = el('div', 'doc-toolbar');
-    const burger = el('button', 'icon-button doc-burger');
-    burger.title = 'Toggle collections';
-    burger.setAttribute('aria-label', 'Toggle collections');
-    burger.innerHTML = BURGER;
-    burger.addEventListener('click', toggleSidebar);
+    const burger = iconButton(BURGER, { title: 'Toggle collections', onClick: toggleSidebar, className: 'doc-burger' });
     const viewToggle = el('div', 'tabs doc-view-toggle');
     const editTab = el('button', 'tab', 'Edit');
     const splitTab = el('button', 'tab', 'Split');
     const previewTab = el('button', 'tab', 'Preview');
     viewToggle.append(editTab, splitTab, previewTab);
-    const info = el('button', 'icon-button doc-info');
-    info.innerHTML = INFO;
-    info.title = 'Internal linking help';
-    info.setAttribute('aria-label', 'Internal linking help');
-    info.addEventListener('click', showLinkHelp);
+    const info = iconButton(INFO, { title: 'Internal linking help', onClick: showLinkHelp, className: 'doc-info' });
     const status = el('span', 'doc-status');
     const count = el('span', 'doc-count');
     toolbar.append(burger, viewToggle, info, status, count);
@@ -684,11 +676,7 @@ export default {
     function drawSidebar() {
       const head = el('div', 'doc-sidebar-head');
       head.append(el('span', 'doc-sidebar-title', 'Notes'));
-      const addCol = el('button', 'icon-button doc-new');
-      addCol.title = 'New collection';
-      addCol.setAttribute('aria-label', 'New collection');
-      addCol.innerHTML = PLUS;
-      addCol.addEventListener('click', newCollection);
+      const addCol = iconButton(PLUS, { title: 'New collection', onClick: newCollection, className: 'doc-new' });
       head.append(addCol);
 
       const list = el('div', 'doc-collection-list');
