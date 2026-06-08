@@ -2,6 +2,8 @@
 // with a live timer. Shows the chosen clip in a small player card. Any audio app
 // can reuse this; it just holds the current clip and fires `change`.
 
+import { createAudioPlayer } from './audioPlayer.js';
+
 const MIC = `
   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
     stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -83,13 +85,13 @@ export function createAudioInput() {
   timer.hidden = true;
   recordRow.append(recordBtn, timer);
 
-  // Clip card (shown once a clip exists)
+  // Clip card (shown once a clip exists) — uses the themed waveform player.
   const clip = document.createElement('div');
   clip.className = 'audio-clip';
   clip.hidden = true;
-  const player = document.createElement('audio');
-  player.controls = true;
-  player.className = 'audio-player';
+  const playerHost = document.createElement('div');
+  playerHost.className = 'audio-clip-player';
+  let activePlayer = null;
   const clipMeta = document.createElement('div');
   clipMeta.className = 'audio-clip-meta';
   const clipName = document.createElement('span');
@@ -99,7 +101,13 @@ export function createAudioInput() {
   remove.className = 'link-button';
   remove.textContent = 'Remove';
   clipMeta.append(clipName, remove);
-  clip.append(player, clipMeta);
+  clip.append(playerHost, clipMeta);
+
+  const tearDownPlayer = () => {
+    activePlayer?.destroy();
+    activePlayer = null;
+    playerHost.replaceChildren();
+  };
 
   function showInputMode() {
     dropzone.hidden = false;
@@ -133,7 +141,9 @@ export function createAudioInput() {
     blob = newBlob;
     filename = name;
     objectUrl = URL.createObjectURL(newBlob);
-    player.src = objectUrl;
+    tearDownPlayer();
+    activePlayer = createAudioPlayer(objectUrl);
+    playerHost.append(activePlayer.el);
     clipName.textContent = newBlob.size ? `${name} · ${formatSize(newBlob.size)}` : name;
     dropzone.hidden = true;
     divider.hidden = true;
@@ -144,9 +154,7 @@ export function createAudioInput() {
 
   function reset() {
     // Stop any playback before clearing the clip.
-    player.pause();
-    player.removeAttribute('src');
-    player.load();
+    tearDownPlayer();
     if (objectUrl) {
       URL.revokeObjectURL(objectUrl);
       objectUrl = null;
@@ -225,6 +233,6 @@ export function createAudioInput() {
     getFilename: () => filename,
     onChange: (fn) => el.addEventListener('change', fn),
     reset,
-    stop: () => player.pause(),
+    stop: () => activePlayer?.audio.pause(),
   };
 }

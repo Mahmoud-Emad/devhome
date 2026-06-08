@@ -18,11 +18,22 @@
 import { createProgressBar } from '../components/progressBar.js';
 import { createResultView } from '../components/resultView.js';
 import { createAudioPlayer } from '../components/audioPlayer.js';
+import { confirmDialog } from '../components/confirm.js';
+import { openContextMenu } from '../components/contextMenu.js';
+import { showUndoToast } from '../components/undoToast.js';
 import { getAppConfig } from './appConfig.js';
 import { dataStore as db } from './dataStore.js';
 
 const MODEL_HINT = 'The model downloads once and is cached — after that it runs offline.';
 const HISTORY_LIMIT = 50;
+let sidebarWidth = 220; // drag-resizable; persists across opens within the session.
+
+const TRASH = `
+  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+    stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M3 6h18"></path><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path>
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+  </svg>`;
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -106,6 +117,7 @@ export function createMediaTextApp(config) {
       let mainEl;
       let activeId = null;
       let activeMedia = null; // the audio player currently shown, so we can stop it
+      const pendingDelete = new Set(); // ids hidden during their undo window
 
       const stopMedia = () => {
         activeMedia?.destroy?.();
@@ -115,9 +127,33 @@ export function createMediaTextApp(config) {
       if (historyEnabled) {
         const layout = el('div', 'mt-layout');
         sidebarEl = el('aside', 'mt-sidebar');
+        sidebarEl.style.width = `${sidebarWidth}px`;
+        const resizer = el('div', 'mt-resizer');
         mainEl = el('div', 'app-flow mt-main');
-        layout.append(sidebarEl, mainEl);
+        layout.append(sidebarEl, resizer, mainEl);
         body.replaceChildren(layout);
+
+        // Drag the divider to resize the sidebar (min 200px), kept for the session.
+        resizer.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          const startX = e.clientX;
+          const startW = sidebarEl.offsetWidth;
+          resizer.setPointerCapture(e.pointerId);
+          layout.classList.add('is-resizing');
+          const move = (ev) => {
+            const max = Math.max(200, layout.clientWidth - 300);
+            sidebarWidth = Math.min(max, Math.max(200, startW + (ev.clientX - startX)));
+            sidebarEl.style.width = `${sidebarWidth}px`;
+          };
+          const up = () => {
+            resizer.releasePointerCapture(e.pointerId);
+            layout.classList.remove('is-resizing');
+            resizer.removeEventListener('pointermove', move);
+            resizer.removeEventListener('pointerup', up);
+          };
+          resizer.addEventListener('pointermove', move);
+          resizer.addEventListener('pointerup', up);
+        });
       } else {
         mainEl = el('div', 'app-flow');
         body.replaceChildren(mainEl);
@@ -139,10 +175,11 @@ export function createMediaTextApp(config) {
         } catch {
           /* ignore */
         }
-        if (!entries.length) {
+        const visible = entries.filter((e) => !pendingDelete.has(e.id));
+        if (!visible.length) {
           list.append(el('p', 'mt-history-empty', 'Nothing yet — your transcripts will appear here.'));
         }
-        for (const entry of entries) {
+        for (const entry of visible) {
           const item = el('div', 'mt-history-item' + (entry.id === activeId ? ' is-active' : ''));
           const open = el('button', 'mt-history-open');
           open.append(
@@ -150,20 +187,41 @@ export function createMediaTextApp(config) {
             el('span', 'mt-history-date', formatWhen(entry.at)),
           );
           open.addEventListener('click', () => showResult(entry));
-          const del = el('button', 'icon-button mt-history-del', '×');
-          del.title = 'Delete';
-          del.setAttribute('aria-label', 'Delete from history');
-          del.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            await removeEntry(entry);
-            if (activeId === entry.id) showInput();
-            else drawSidebar();
+          item.append(open);
+          // Delete lives in the right-click menu.
+          item.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            openContextMenu(e.clientX, e.clientY, [
+              { label: 'Delete', icon: TRASH, danger: true, onClick: () => deleteEntry(entry) },
+            ]);
           });
-          item.append(open, del);
           list.append(item);
         }
         sidebarEl.replaceChildren(head, list);
       }
+
+      // Confirm, then soft-delete with a 1s undo window before it's committed.
+      const deleteEntry = async (entry) => {
+        if (!(await confirmDialog('Delete this transcript?'))) return;
+        pendingDelete.add(entry.id);
+        if (activeId === entry.id) showInput();
+        else drawSidebar();
+
+        let undone = false;
+        showUndoToast('Transcript deleted', {
+          duration: 1000,
+          onUndo: () => {
+            undone = true;
+            pendingDelete.delete(entry.id);
+            drawSidebar();
+          },
+        });
+        setTimeout(async () => {
+          if (undone || !pendingDelete.has(entry.id)) return;
+          pendingDelete.delete(entry.id);
+          await removeEntry(entry);
+        }, 1000);
+      };
 
       const showInput = (error) => {
         stopMedia();

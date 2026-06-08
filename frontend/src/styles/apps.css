@@ -1406,25 +1406,7 @@
   color: var(--text-secondary);
 }
 
-.mt-history-del {
-  flex: 0 0 auto;
-  width: 26px;
-  height: 26px;
-  font-size: 17px;
-  line-height: 1;
-  color: var(--text-secondary);
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-
-.mt-history-item:hover .mt-history-del,
-.mt-history-item.is-active .mt-history-del {
-  opacity: 1;
-}
-
-.mt-history-del:hover {
-  color: #ff8f8f;
-}
+/* (Delete lives in the row's right-click menu.) */
 
 /* Saved media replayed alongside a result. */
 .mt-result {
@@ -1587,16 +1569,11 @@
 .audio-clip {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-md);
-  background: rgba(0, 0, 0, 0.2);
+  gap: 8px;
 }
 
-.audio-player {
-  width: 100%;
-  height: 38px;
+.audio-clip-player {
+  min-width: 0;
 }
 
 /* Denoise — A/B result */

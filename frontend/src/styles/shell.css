@@ -353,6 +353,49 @@
   background: var(--hairline);
 }
 
+/* Reusable undo toast (bottom-center, auto-dismiss). */
+.undo-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  z-index: 9500;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: calc(100vw - 32px);
+  padding: 10px 10px 10px 16px;
+  font-size: 13px;
+  color: var(--text);
+  background: rgba(28, 28, 32, 0.98);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+}
+
+.undo-toast-msg {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.undo-toast-btn {
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.undo-toast-btn:hover {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
 /* Shared confirmation dialog — sits above app windows. */
 .confirm-overlay {
   position: fixed;
