@@ -10,7 +10,7 @@ export default createMediaTextApp({
   description: 'Extract text from voice notes',
   accent: '#6c8cff',
   order: 1,
-  dialog: { size: 'md' },
+  dialog: { size: 'lg' },
 
   intro: 'Upload or record a voice note and get the text back.',
   note:

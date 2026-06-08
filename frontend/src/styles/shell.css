@@ -484,6 +484,8 @@
 .dialog.is-sized .doc-layout,
 .dialog.is-max .todo-layout,
 .dialog.is-sized .todo-layout,
+.dialog.is-max .mt-layout,
+.dialog.is-sized .mt-layout,
 .dialog.is-max .pdf-reader,
 .dialog.is-sized .pdf-reader {
   flex: 1;

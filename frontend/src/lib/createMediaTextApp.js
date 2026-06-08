@@ -7,9 +7,10 @@
 //   run(data, cfg, { onProgress })-> string | { text }   (onProgress: engine progress)
 //   plus copy: intro, note, actionLabel, processingHeading, resultLabel, …
 //
-// Every successful result is saved to a local, per-app history (kept on-device)
-// so the user can revisit past transcriptions/extractions. Pass `history: false`
-// to opt out.
+// Every successful result is saved to a local, per-app history (kept on-device):
+// the text plus the original media (audio/image), so the user can revisit a past
+// run, replay the audio, and copy the text. History lives in a left sidebar.
+// Pass `history: false` to opt out (plain single-pane flow).
 //
 // Everything else (id/name/accent/dialog/settings/order) is spread onto the
 // returned descriptor.
@@ -58,20 +59,109 @@ export function createMediaTextApp(config) {
 
   const HISTORY = `history:${config.id}`;
   const loadHistory = async () => (await db.list(HISTORY)).sort((a, b) => (b.at || 0) - (a.at || 0));
-  const saveHistory = async (text) => {
-    await db.put(HISTORY, { text, at: Date.now() });
-    const all = await loadHistory();
-    for (const h of all.slice(HISTORY_LIMIT)) await db.remove(HISTORY, h.id); // keep newest N
+
+  const removeEntry = async (entry) => {
+    if (entry.blobKey) await db.delBlob(entry.blobKey);
+    await db.remove(HISTORY, entry.id);
   };
+
+  const saveHistory = async (text, blob, name) => {
+    let blobKey;
+    if (blob) {
+      blobKey = `${HISTORY}/${db.uid()}`;
+      await db.putBlob(blobKey, blob);
+    }
+    const entry = await db.put(HISTORY, {
+      text,
+      at: Date.now(),
+      blobKey,
+      mime: blob?.type || '',
+      name: name || blob?.name || '',
+    });
+    for (const old of (await loadHistory()).slice(HISTORY_LIMIT)) await removeEntry(old); // keep newest N
+    return entry;
+  };
+
+  // A player for the saved media (audio control, or an image), or null.
+  async function mediaEl(entry) {
+    if (!entry?.blobKey) return null;
+    const url = await db.blobUrl(entry.blobKey);
+    if (!url) return null;
+    if ((entry.mime || '').startsWith('image/')) {
+      const img = el('img', 'mt-media-img');
+      img.src = url;
+      img.alt = entry.name || 'Input image';
+      return img;
+    }
+    const audio = el('audio', 'mt-media-audio');
+    audio.controls = true;
+    audio.src = url;
+    return audio;
+  }
 
   return {
     ...config,
 
     render(body) {
-      const root = el('div', 'app-flow');
-      body.replaceChildren(root);
+      let sidebarEl = null;
+      let mainEl;
+      let activeId = null;
 
-      const showInput = async (error) => {
+      if (historyEnabled) {
+        const layout = el('div', 'mt-layout');
+        sidebarEl = el('aside', 'mt-sidebar');
+        mainEl = el('div', 'app-flow mt-main');
+        layout.append(sidebarEl, mainEl);
+        body.replaceChildren(layout);
+      } else {
+        mainEl = el('div', 'app-flow');
+        body.replaceChildren(mainEl);
+      }
+
+      async function drawSidebar() {
+        if (!sidebarEl) return;
+        const head = el('div', 'mt-sidebar-head');
+        const newBtn = el('button', 'icon-button mt-new', '+');
+        newBtn.title = 'New';
+        newBtn.setAttribute('aria-label', 'New');
+        newBtn.addEventListener('click', () => showInput());
+        head.append(el('span', 'mt-sidebar-title', 'History'), newBtn);
+
+        const list = el('div', 'mt-history-list');
+        let entries = [];
+        try {
+          entries = await loadHistory();
+        } catch {
+          /* ignore */
+        }
+        if (!entries.length) {
+          list.append(el('p', 'mt-history-empty', 'Nothing yet — your transcripts will appear here.'));
+        }
+        for (const entry of entries) {
+          const item = el('div', 'mt-history-item' + (entry.id === activeId ? ' is-active' : ''));
+          const open = el('button', 'mt-history-open');
+          open.append(
+            el('span', 'mt-history-snippet', snippet(entry.text)),
+            el('span', 'mt-history-date', formatWhen(entry.at)),
+          );
+          open.addEventListener('click', () => showResult(entry));
+          const del = el('button', 'icon-button mt-history-del', '×');
+          del.title = 'Delete';
+          del.setAttribute('aria-label', 'Delete from history');
+          del.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await removeEntry(entry);
+            if (activeId === entry.id) showInput();
+            else drawSidebar();
+          });
+          item.append(open, del);
+          list.append(item);
+        }
+        sidebarEl.replaceChildren(head, list);
+      }
+
+      const showInput = (error) => {
+        activeId = null;
         const input = createInput();
         const action = el('button', 'button-primary', actionLabel);
         action.disabled = !input.getData();
@@ -83,83 +173,52 @@ export function createMediaTextApp(config) {
         const nodes = [leadText(intro), input.el, action];
         if (note) nodes.push(leadText(note, 'app-note'));
         if (error) nodes.push(el('p', 'app-error', error));
-        root.replaceChildren(...nodes);
-
-        if (historyEnabled) await appendHistory();
-      };
-
-      // Appends the "History" panel below the input (only if there are entries).
-      const appendHistory = async () => {
-        let entries;
-        try {
-          entries = await loadHistory();
-        } catch {
-          return;
-        }
-        if (!entries.length) return;
-
-        const panel = el('div', 'mt-history');
-        const head = el('div', 'mt-history-head');
-        const clear = el('button', 'link-button', 'Clear all');
-        clear.addEventListener('click', async () => {
-          for (const h of entries) await db.remove(HISTORY, h.id);
-          showInput();
-        });
-        head.append(el('span', 'mt-history-title', `History · ${entries.length}`), clear);
-        panel.append(head);
-
-        const list = el('div', 'mt-history-list');
-        for (const entry of entries) {
-          const item = el('div', 'mt-history-item');
-          const open = el('button', 'mt-history-open');
-          open.append(
-            el('span', 'mt-history-snippet', snippet(entry.text)),
-            el('span', 'mt-history-date', formatWhen(entry.at)),
-          );
-          open.addEventListener('click', () => showResult(entry.text));
-          const del = el('button', 'icon-button mt-history-del', '×');
-          del.title = 'Delete';
-          del.setAttribute('aria-label', 'Delete from history');
-          del.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            await db.remove(HISTORY, entry.id);
-            showInput();
-          });
-          item.append(open, del);
-          list.append(item);
-        }
-        panel.append(list);
-        root.append(panel);
+        mainEl.replaceChildren(...nodes);
+        drawSidebar();
       };
 
       const execute = async (input) => {
         input.stop?.();
+        const data = input.getData();
         const cfg = getAppConfig(config);
 
         const heading = el('p', 'progress-heading', processingHeading);
         const bar = createProgressBar({ hint: MODEL_HINT });
-        root.replaceChildren(heading, bar.el);
+        mainEl.replaceChildren(heading, bar.el);
 
         try {
-          const result = await run(input.getData(), cfg, { onProgress: (p) => bar.update(p) });
+          const result = await run(data, cfg, { onProgress: (p) => bar.update(p) });
           const text = typeof result === 'string' ? result : pickText(result);
-          if (historyEnabled && (text || '').trim()) await saveHistory(text);
-          showResult(text || '');
+          const entry =
+            historyEnabled && (text || '').trim()
+              ? await saveHistory(text, data?.blob, data?.filename)
+              : { text: text || '' };
+          showResult(entry);
         } catch (err) {
           showInput(err.message);
         }
       };
 
-      const showResult = (text) => {
-        root.replaceChildren(
-          createResultView({
-            label: resultLabel,
-            text,
-            emptyText,
-            downloadName,
-            onRestart: () => showInput(),
-          }).el,
-        );
+      const showResult = async (entry) => {
+        activeId = entry.id ?? null;
+        const view = createResultView({
+          label: resultLabel,
+          text: entry.text,
+          emptyText,
+          downloadName,
+          onRestart: () => showInput(),
+        });
+        const media = await mediaEl(entry);
+        if (media) {
+          const wrap = el('div', 'mt-result');
+          const box = el('div', 'mt-media');
+          box.append(media);
+          wrap.append(box, view.el);
+          mainEl.replaceChildren(wrap);
+        } else {
+          mainEl.replaceChildren(view.el);
+        }
+        drawSidebar();
       };
 
       showInput();

@@ -1297,23 +1297,38 @@
   border-radius: var(--radius-sm);
 }
 
-/* Per-app history (voice/image → text), saved locally. */
-.mt-history {
+/* Media→text apps (Voice to Text): history sidebar + main pane. */
+.mt-layout {
+  position: relative;
+  display: flex;
+  height: min(64vh, 470px);
+}
+
+.mt-sidebar {
+  flex: 0 0 210px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: 6px;
-  padding-top: 14px;
-  border-top: 1px solid var(--hairline);
+  padding-right: 12px;
+  margin-right: 16px;
+  border-right: 1px solid var(--hairline);
+  overflow: hidden;
 }
 
-.mt-history-head {
+.mt-main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.mt-sidebar-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
+  padding: 0 2px 10px;
 }
 
-.mt-history-title {
+.mt-sidebar-title {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -1321,12 +1336,28 @@
   color: var(--text-secondary);
 }
 
+.mt-new {
+  width: 28px;
+  height: 28px;
+  font-size: 20px;
+  line-height: 1;
+}
+
 .mt-history-list {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  max-height: 240px;
   overflow-y: auto;
+}
+
+.mt-history-empty {
+  margin: 0;
+  padding: 8px 4px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-secondary);
 }
 
 .mt-history-item {
@@ -1334,11 +1365,17 @@
   align-items: center;
   gap: 2px;
   border-radius: var(--radius-sm);
-  transition: background 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .mt-history-item:hover {
   background: rgba(255, 255, 255, 0.05);
+}
+
+.mt-history-item.is-active {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .mt-history-open {
@@ -1380,12 +1417,29 @@
   transition: opacity 0.15s ease;
 }
 
-.mt-history-item:hover .mt-history-del {
+.mt-history-item:hover .mt-history-del,
+.mt-history-item.is-active .mt-history-del {
   opacity: 1;
 }
 
 .mt-history-del:hover {
   color: #ff8f8f;
+}
+
+/* Saved media replayed alongside a result. */
+.mt-result {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mt-media-audio {
+  width: 100%;
+}
+
+.mt-media-img {
+  max-width: 100%;
+  border-radius: var(--radius-sm);
 }
 
 /* Audio input — dropzone, record, clip card */
