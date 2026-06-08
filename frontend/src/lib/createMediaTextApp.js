@@ -34,6 +34,24 @@ const TRASH = `
     <path d="M3 6h18"></path><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path>
     <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
   </svg>`;
+const OPEN = `
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M15 3h6v6"></path><path d="M10 14L21 3"></path>
+    <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path>
+  </svg>`;
+const COPY = `
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+  </svg>`;
+const DOWNLOAD = `
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+    <path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path>
+  </svg>`;
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -188,10 +206,18 @@ export function createMediaTextApp(config) {
           );
           open.addEventListener('click', () => showResult(entry));
           item.append(open);
-          // Delete lives in the right-click menu.
+          // Actions live in the right-click menu.
           item.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             openContextMenu(e.clientX, e.clientY, [
+              { label: 'Open', icon: OPEN, onClick: () => showResult(entry) },
+              {
+                label: 'Copy text',
+                icon: COPY,
+                onClick: () => navigator.clipboard?.writeText(entry.text || '').catch(() => {}),
+              },
+              { label: 'Download .txt', icon: DOWNLOAD, onClick: () => downloadText(entry) },
+              { separator: true },
               { label: 'Delete', icon: TRASH, danger: true, onClick: () => deleteEntry(entry) },
             ]);
           });
@@ -200,7 +226,17 @@ export function createMediaTextApp(config) {
         sidebarEl.replaceChildren(head, list);
       }
 
-      // Confirm, then soft-delete with a 1s undo window before it's committed.
+      const downloadText = (entry) => {
+        const url = URL.createObjectURL(new Blob([entry.text || ''], { type: 'text/plain' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = downloadName;
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+
+      // Confirm, then soft-delete with an undo window before it's committed.
+      const UNDO_MS = 5000;
       const deleteEntry = async (entry) => {
         if (!(await confirmDialog('Delete this transcript?'))) return;
         pendingDelete.add(entry.id);
@@ -209,7 +245,7 @@ export function createMediaTextApp(config) {
 
         let undone = false;
         showUndoToast('Transcript deleted', {
-          duration: 1000,
+          duration: UNDO_MS,
           onUndo: () => {
             undone = true;
             pendingDelete.delete(entry.id);
@@ -220,7 +256,7 @@ export function createMediaTextApp(config) {
           if (undone || !pendingDelete.has(entry.id)) return;
           pendingDelete.delete(entry.id);
           await removeEntry(entry);
-        }, 1000);
+        }, UNDO_MS);
       };
 
       const showInput = (error) => {

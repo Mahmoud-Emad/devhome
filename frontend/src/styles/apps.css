@@ -1305,20 +1305,71 @@
 }
 
 .mt-sidebar {
-  flex: 0 0 210px;
+  flex: 0 0 auto;
+  width: 220px; /* overridden inline; drag-resizable */
+  min-width: 200px;
   display: flex;
   flex-direction: column;
   padding-right: 12px;
-  margin-right: 16px;
   border-right: 1px solid var(--hairline);
   overflow: hidden;
+}
+
+/* Draggable divider between the history sidebar and the main pane. */
+.mt-resizer {
+  flex: 0 0 12px;
+  align-self: stretch;
+  position: relative;
+  cursor: col-resize;
+}
+
+.mt-resizer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 5px;
+  width: 2px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.mt-resizer:hover::after,
+.mt-layout.is-resizing .mt-resizer::after {
+  background: var(--accent);
+}
+
+.mt-layout.is-resizing {
+  cursor: col-resize;
+  user-select: none;
 }
 
 .mt-main {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   overflow-y: auto;
+  padding-left: 16px;
   padding-right: 2px;
+}
+
+/* The result fills the main pane so the transcript grows with the dialog. */
+.mt-main > .app-flow,
+.mt-main > .mt-result {
+  flex: 1;
+  min-height: 0;
+}
+
+.mt-result > .app-flow {
+  flex: 1;
+  min-height: 0;
+}
+
+.mt-main .result-text {
+  flex: 1;
+  min-height: 160px;
+  resize: none;
 }
 
 .mt-sidebar-head {
